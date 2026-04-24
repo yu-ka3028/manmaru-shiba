@@ -18,7 +18,7 @@
 
 ### バックエンドをRailsにした理由
 - プログラミング学習時にRails/Rubyを経験済みで学習コストが低い
-- 転職本命（カケハシ・Ubie・メドレー）がRailsを使用している
+- ヘルステックSaaS企業がRailsを使用している
 - GoodJobを使うことでPostgreSQLのみのゼロ円構成が成立する
 
 ### ジョブ処理をGoodJobにした理由（Sidekiqではなく）
