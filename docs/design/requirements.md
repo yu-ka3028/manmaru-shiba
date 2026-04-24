@@ -80,7 +80,7 @@
 
 | 役割 | 技術 | 選定理由 |
 |---|---|---|
-| バックエンド | Rails API only | 転職先と一致・既存知識・GoodJobでゼロ円構成 |
+| バックエンド | Rails API only | 既存知識・GoodJobでゼロ円構成 |
 | フロントエンド | Next.js / TypeScript | 既存知識・Vercel無料枠 |
 | LINE連携 | LIFF + Webhook | ミニアプリより審査不要・個人開発に適切 |
 | ジョブ処理 | GoodJob | PostgreSQLのみで完結・Redis不要 |
