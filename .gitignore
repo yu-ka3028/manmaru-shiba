@@ -1,0 +1,15 @@
+# Rails
+backend/.bundle/
+backend/log/
+backend/tmp/
+backend/storage/
+backend/*.env
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/.env*
+frontend/.env.local
+
+# OS
+.DS_Store
