@@ -110,6 +110,12 @@ PRを作成したあと、ユーザーがスクラップの言語化チェック
 
 自分の言葉で書いた内容はClaude側でコミットしない。ユーザーに委ねる。
 
+Claudeがコミットする場合は必ず以下のトレーラーを付ける：
+
+```
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
 ## ドキュメントの場所
 
 - 要件定義・設計：`docs/design/`
