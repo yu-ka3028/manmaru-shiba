@@ -76,6 +76,15 @@
 - 閉じるとLINEのトーク画面に戻る
 - `liff.isInClient()` でLINE内かどうかを判定できる
 
+### LIFF SDK
+- LINEが提供する関数をまとめたライブラリ
+- `npm install @line/liff` でNext.jsプロジェクトに追加する
+- 主な関数：
+  - `liff.getProfile()` — ユーザー名・アイコン取得
+  - `liff.getIDToken()` — 認証用トークン取得
+  - `liff.isInClient()` — LINE内ブラウザかどうか判定
+- SDKを組み込むことでLINEログイン済みユーザーの情報を自前実装なしで取得できる
+
 ---
 
 ## 言語化チェックリスト
