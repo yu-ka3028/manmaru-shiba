@@ -71,13 +71,18 @@
 | id | bigint | PK | |
 | dog_id | bigint | NOT NULL, FK → dogs | |
 | user_id | bigint | NOT NULL, FK → users | 記録したユーザー |
-| care_type | string | NOT NULL | enum: meal / walk / toilet |
+| type | string | NOT NULL, DEFAULT "CareRecord" | STI識別子（CareRecord / Post） |
+| care_type | string | NOT NULL（Postの場合はNULL可） | enum: meal / walk_short / walk_long / pee / poop |
 | recorded_at | datetime | NOT NULL | 実際に世話した時刻 |
+| content | text | | （v2）Postの呟きテキスト |
+| photo_url | string | | （v2）Postの写真URL |
 | created_at | datetime | NOT NULL | |
 | updated_at | datetime | NOT NULL | |
 
 > `recorded_at` と `created_at` を分離している理由：後付け記録（「さっきトイレ行ったの忘れてた」）を正確に扱うため。  
 > アラート・タイムライン表示は `recorded_at` を基準にする。
+>
+> `type` カラムはRails STI用。v1は常に "CareRecord"。v2で "Post"（呟き＋写真）を追加。
 
 ---
 
@@ -87,7 +92,7 @@
 |---|---|---|---|
 | id | bigint | PK | |
 | dog_id | bigint | NOT NULL, FK → dogs | |
-| care_type | string | NOT NULL | enum: toilet（v1はtoiletのみ） |
+| care_type | string | NOT NULL | enum: pee / poop |
 | interval_hours | integer | NOT NULL, DEFAULT 4 | アラートまでの時間（時） |
 | created_at | datetime | NOT NULL | |
 | updated_at | datetime | NOT NULL | |
@@ -111,4 +116,6 @@ users ──< group_members >── groups ──< dogs ──< care_records
 
 ## v2以降
 
-- `family_notes` テーブル：自由記入の連絡事項（構造化不要なコミュニケーション用）
+- `care_records` に `content`・`photo_url` を追加（Postタイプ：呟き＋写真）
+- `care_records.type = "Post"` で呟き・写真投稿をタイムラインに混在させる
+- `groups` にコンテンツ公開設定を追加（犬友への閲覧専用公開）

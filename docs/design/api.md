@@ -76,10 +76,10 @@
 
 **POST リクエスト**
 ```json
-{ "care_type": "meal", "recorded_at": "2026-04-25T12:00:00+09:00" }
+{ "care_type": "pee", "recorded_at": "2026-04-25T12:00:00+09:00" }
 ```
 
-> `care_type` は `meal` / `walk` / `toilet` のいずれか
+> `care_type` は `meal` / `walk_short` / `walk_long` / `pee` / `poop` のいずれか
 
 ---
 
@@ -90,11 +90,19 @@
 | GET | `/api/v1/dogs/:dog_id/alert_settings` | アラート設定を取得 | 必要 |
 | PATCH | `/api/v1/dogs/:dog_id/alert_settings` | アラート設定を変更 | 必要 |
 
-> 犬を作成した時点でデフォルト値（`interval_hours: 4`）で自動生成される
+> 犬を作成した時点で `pee` / `poop` それぞれデフォルト値（`interval_hours: 4`）で自動生成される
+
+**GET レスポンス**
+```json
+[
+  { "care_type": "pee", "interval_hours": 4 },
+  { "care_type": "poop", "interval_hours": 8 }
+]
+```
 
 **PATCH リクエスト**
 ```json
-{ "interval_hours": 6 }
+{ "care_type": "pee", "interval_hours": 6 }
 ```
 
 ---
@@ -112,4 +120,6 @@
 ## v2以降
 
 - `GET /api/v1/dogs/:dog_id/care_records` にページネーション追加
+- `POST /api/v1/dogs/:dog_id/care_records` にPostタイプ（呟き＋写真）追加
 - 外部ブラウザからのLINE OAuthログイン対応
+- グループのコンテンツ公開設定API（犬友への閲覧専用公開）
