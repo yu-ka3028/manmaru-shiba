@@ -124,8 +124,8 @@
 ## 7. 未決定事項
 
 - [x] DB設計（テーブル・リレーション） → docs/design/database.md 参照
-- [ ] API設計（エンドポイント一覧）
-- [ ] LIFF画面設計
+- [x] API設計（エンドポイント一覧） → docs/design/api.md 参照
+- [x] LIFF画面設計 → docs/design/liff.md 参照
 - [ ] 通知方法の詳細（排泄アラートのLINE通知をどう送るか）
 - [x] 認証・家族グループの管理方法 → 4-1参照
 
