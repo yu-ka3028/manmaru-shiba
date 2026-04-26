@@ -1,7 +1,7 @@
 # LIFF画面設計
 
 **作成日：** 2026-04-25  
-**ステータス：** 草案
+**ステータス：** 確定
 
 ---
 
@@ -40,6 +40,30 @@ Bot友達追加
   └── /timeline（メイン）
         └── 設定ボタン → /settings
 ```
+
+---
+
+## コンポーネント構成
+
+v0.dev で生成したコードをベースにしている。詳細は `docs/design/ui.md` 参照。
+
+```
+app/
+  timeline/page.tsx       ← メイン画面
+  setup/page.tsx
+  join/page.tsx
+  settings/page.tsx
+components/
+  shiba-header.tsx        ← アプリ名 + FamilyCircle（柴犬を中心に家族が輪になる）
+  status-summary.tsx      ← 2x2グリッドのステータスサマリー
+  timeline-card.tsx       ← ケア記録カード（担当者色・アクティビティアイコン）
+  shiba-icons.tsx         ← ShibaFace / PawPrint / CurlyTail カスタムアイコン
+  ui/                     ← shadcn/ui コンポーネント
+```
+
+### FamilyCircle のコンセプト
+「家族の中心で会話のきっかけになる、みんなを輪で繋ぐ」をビジュアルで表現。
+柴犬を中心に家族メンバーのアバターが輪になる。タイムラインカードの担当者色と統一することで「誰が記録したか」が一目でわかる。
 
 ---
 
