@@ -252,3 +252,4 @@ meal と walk は care_records に記録してタイムラインに表示する�
 
 - [ ] meal / walk を alert_settings に含めない理由を「アラートの性質が違う」で説明できるか
 - [ ] `care_records.care_type` と `alert_settings.care_type` の値セットが異なる理由を説明できるか
+
