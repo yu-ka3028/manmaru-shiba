@@ -1,0 +1,142 @@
+"use client"
+
+import { ShibaHeader, FamilyCircle } from "@/components/shiba-header"
+import { StatusSummary, createDefaultStatusItems } from "@/components/status-summary"
+import { TimelineItem, type ActivityType } from "@/components/timeline-card"
+import { Plus, PencilLine } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { PawPrint } from "@/components/shiba-icons"
+
+interface TimelineEntry {
+  id: string
+  type: ActivityType
+  title: string
+  subtitle?: string
+  person: string
+  time: string
+}
+
+const timelineData: TimelineEntry[] = [
+  {
+    id: "1",
+    type: "walk",
+    title: "散歩",
+    subtitle: "ロングコース",
+    person: "お母さん",
+    time: "14:00",
+  },
+  {
+    id: "2",
+    type: "food",
+    title: "ごはん",
+    person: "お父さん",
+    time: "12:00",
+  },
+  {
+    id: "3",
+    type: "pee",
+    title: "おしっこ",
+    person: "お母さん",
+    time: "10:30",
+  },
+  {
+    id: "4",
+    type: "walk",
+    title: "散歩",
+    subtitle: "ショートコース",
+    person: "お父さん",
+    time: "8:00",
+  },
+  {
+    id: "5",
+    type: "poop",
+    title: "うんち",
+    person: "お父さん",
+    time: "7:30",
+  },
+]
+
+export default function ShibaCareTimeline() {
+  const statusItems = createDefaultStatusItems()
+
+  const handleEdit = (id: string) => {
+    console.log("Edit entry:", id)
+  }
+
+  const handleDelete = (id: string) => {
+    console.log("Delete entry:", id)
+  }
+
+  const handleSettings = () => {
+    console.log("Settings clicked")
+  }
+
+  const handleAddEntry = () => {
+    console.log("Add new entry")
+  }
+
+  return (
+    <div className="relative min-h-screen bg-gradient-to-b from-background via-background to-secondary/30">
+      <div className="mx-auto max-w-md px-5 pb-28">
+        {/* Header - サービス名と概要 */}
+        <ShibaHeader onSettingsClick={handleSettings} />
+
+        {/* 犬+家族の輪とサマリーを横並び */}
+        <section aria-label="ステータス" className="flex items-center gap-4 mt-2">
+          {/* 左: 柴犬と家族の輪 */}
+          <div className="shrink-0">
+            <FamilyCircle 
+              dogName="コタロウ" 
+              familyMembers={["お母さん", "お父さん", "お姉ちゃん"]} 
+            />
+          </div>
+          
+          {/* 右: サマリー 2x2 */}
+          <div className="flex-1 min-w-0">
+            <StatusSummary items={statusItems} />
+          </div>
+        </section>
+
+        {/* Timeline */}
+        <section aria-label="タイムライン" className="mt-8">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
+              <PencilLine className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h2 className="text-sm font-bold text-primary tracking-wide">
+              今日の記録
+            </h2>
+          </div>
+          <div className="relative pl-1 overflow-visible">
+            {timelineData.map((entry, index) => (
+              <TimelineItem
+                key={entry.id}
+                type={entry.type}
+                title={entry.title}
+                subtitle={entry.subtitle}
+                person={entry.person}
+                time={entry.time}
+                isLatest={index === 0}
+                onEdit={() => handleEdit(entry.id)}
+                onDelete={() => handleDelete(entry.id)}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* Floating Action Button - まんまる肉球 */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2">
+        <Button
+          size="lg"
+          className="relative h-16 w-16 rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/30 transition-all hover:scale-110 active:scale-95"
+          onClick={handleAddEntry}
+          aria-label="記録を追加"
+        >
+          <PawPrint className="absolute h-12 w-12 opacity-15" />
+          <Plus className="h-7 w-7 relative z-10" strokeWidth={2.5} />
+        </Button>
+      </div>
+    </div>
+  )
+}
