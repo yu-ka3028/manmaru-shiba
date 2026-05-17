@@ -35,13 +35,22 @@ function JoinContent() {
         </h2>
       </div>
 
-      {/* 参加ボタン */}
-      <Button
-        onClick={() => router.push("/timeline")}
-        className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
-      >
-        参加する
-      </Button>
+      {/* ボタン群 */}
+      <div className="space-y-3">
+        <Button
+          onClick={() => router.push("/timeline")}
+          className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
+        >
+          参加する
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/")}
+          className="w-full h-12 text-muted-foreground hover:text-foreground"
+        >
+          参加しない
+        </Button>
+      </div>
     </div>
   )
 }
