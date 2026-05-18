@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useLiff } from "@/hooks/use-liff"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -31,7 +32,29 @@ type SetupFormValues = z.infer<typeof setupSchema>
 
 export default function SetupPage() {
   const router = useRouter()
+  const { isLoading, isInClient, error } = useLiff()
   const [calendarOpen, setCalendarOpen] = useState(false)
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">読み込み中...</p>
+      </div>
+    )
+  }
+
+  if (error || !isInClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center px-8">
+        <div className="text-center space-y-2">
+          <p className="font-semibold text-foreground">LINEアプリで開いてください</p>
+          <p className="text-sm text-muted-foreground">
+            このページはLINEアプリ内専用です。
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const {
     register,
