@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { ShibaHeader, FamilyCircle } from "@/components/shiba-header"
 import { StatusSummary, createDefaultStatusItems } from "@/components/status-summary"
 import { TimelineItem, type ActivityType } from "@/components/timeline-card"
@@ -57,6 +58,7 @@ const timelineData: TimelineEntry[] = [
 ]
 
 export default function ShibaCareTimeline() {
+  const router = useRouter()
   const statusItems = createDefaultStatusItems()
 
   const handleEdit = (id: string) => {
@@ -68,7 +70,7 @@ export default function ShibaCareTimeline() {
   }
 
   const handleSettings = () => {
-    console.log("Settings clicked")
+    router.push("/settings")
   }
 
   const handleAddEntry = () => {

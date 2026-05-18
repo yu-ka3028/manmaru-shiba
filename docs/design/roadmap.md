@@ -43,7 +43,7 @@ Phase 4：計測・判断
 - [ ] LIFF画面：タイムライン（モック）→ #7
 - [x] LIFF画面：/setup 初回セットアップ（モック）→ #26
 - [x] LIFF画面：/join グループ参加（モック）→ #27
-- [ ] LIFF画面：/settings アラート設定（モック）→ #28
+- [x] LIFF画面：/settings アラート設定（モック）→ #28
 
 ### Step 2：認証
 - [ ] LIFF SDK 導入・LINE認証 → #29
