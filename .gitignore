@@ -4,6 +4,7 @@ backend/log/
 backend/tmp/
 backend/storage/
 backend/*.env
+backend/config/master.key
 
 # Next.js
 frontend/.next/
