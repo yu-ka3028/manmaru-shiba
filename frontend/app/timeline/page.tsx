@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useLiff } from "@/hooks/use-liff"
 import { ShibaHeader, FamilyCircle } from "@/components/shiba-header"
 import { StatusSummary, createDefaultStatusItems } from "@/components/status-summary"
 import { TimelineItem, type ActivityType } from "@/components/timeline-card"
@@ -59,7 +60,29 @@ const timelineData: TimelineEntry[] = [
 
 export default function ShibaCareTimeline() {
   const router = useRouter()
+  const { isLoading, isInClient, error } = useLiff()
   const statusItems = createDefaultStatusItems()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">読み込み中...</p>
+      </div>
+    )
+  }
+
+  if (error || !isInClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center px-8">
+        <div className="text-center space-y-2">
+          <p className="font-semibold text-foreground">LINEアプリで開いてください</p>
+          <p className="text-sm text-muted-foreground">
+            このページはLINEアプリ内専用です。
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   const handleEdit = (id: string) => {
     console.log("Edit entry:", id)
