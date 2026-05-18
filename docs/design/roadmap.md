@@ -46,7 +46,7 @@ Phase 4：計測・判断
 - [x] LIFF画面：/settings アラート設定（モック）→ #28
 
 ### Step 2：認証
-- [ ] LIFF SDK 導入・LINE認証 → #29
+- [x] LIFF SDK 導入・LINE認証 → #29
 
 ### Step 3：バックエンド
 - [ ] Webhook基盤 → #20
