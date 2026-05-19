@@ -37,7 +37,7 @@ gem "bootsnap", require: false
 gem "rack-cors"
 
 # LINE Bot SDK
-gem "line-bot-api"
+gem "line-bot-api", require: "line/bot"
 
 # JWT authentication
 gem "jwt"
