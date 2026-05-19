@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = "force-dynamic"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLiff } from "@/hooks/use-liff"
@@ -34,6 +36,17 @@ export default function SetupPage() {
   const router = useRouter()
   const { isLoading, isInClient, error } = useLiff()
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<SetupFormValues>({
+    resolver: zodResolver(setupSchema),
+  })
+
+  const selectedDate = watch("dogBirthday")
 
   if (isLoading) {
     return (
@@ -55,18 +68,6 @@ export default function SetupPage() {
       </div>
     )
   }
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<SetupFormValues>({
-    resolver: zodResolver(setupSchema),
-  })
-
-  const selectedDate = watch("dogBirthday")
 
   const onSubmit = async (_data: SetupFormValues) => {
     // モック段階：APIは呼ばずそのままリダイレクト
