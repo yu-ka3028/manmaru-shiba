@@ -3,7 +3,7 @@ module Webhooks
     before_action :verify_signature
 
     def receive
-      events = client.parse_events_from(request.body.read)
+      events = client.parse_events_from(request.raw_post)
 
       events.each do |event|
         case event
@@ -20,11 +20,8 @@ module Webhooks
     private
 
     def verify_signature
-      body = request.body.read
-      request.body.rewind
-
       signature = request.headers["X-Line-Signature"]
-      unless client.validate_signature(body, signature)
+      unless client.validate_signature(request.raw_post, signature)
         head :bad_request and return
       end
     end
