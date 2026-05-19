@@ -49,7 +49,7 @@ Phase 4：計測・判断
 - [x] LIFF SDK 導入・LINE認証 → #29
 
 ### Step 3：バックエンド
-- [ ] Webhook基盤 → #20
+- [x] Webhook基盤 → #20
 - [ ] ケア記録（ボタン→DB）→ #21
 - [ ] 状態確認Flex Message → #22
 - [ ] 排泄アラート → #8
