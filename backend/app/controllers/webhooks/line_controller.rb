@@ -83,7 +83,8 @@ module Webhooks
       else
         dogs = user.dogs
         if dogs.count == 1
-          create_care_record_and_reply(event["replyToken"], user, dogs.first, care_type)
+          dog = dogs.first
+          create_care_record_and_reply(event["replyToken"], user, dog, care_type)
         else
           reply_dog_select_quick_reply(event["replyToken"], dogs, care_type)
         end
