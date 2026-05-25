@@ -2,6 +2,14 @@ module Webhooks
   class LineController < ApplicationController
     before_action :verify_signature
 
+    CARE_TYPE_LABELS = {
+      "meal"       => "ごはん",
+      "walk_short" => "散歩（ショート）",
+      "walk_long"  => "散歩（ロング）",
+      "pee"        => "おしっこ",
+      "poop"       => "うんち"
+    }.freeze
+
     def receive
       events = client.parse_events_from(request.body.read)
 
@@ -11,6 +19,8 @@ module Webhooks
           handle_follow(event)
         when Line::Bot::Event::Message
           handle_message(event)
+        when Line::Bot::Event::Postback
+          handle_postback(event)
         end
       end
 
@@ -48,6 +58,84 @@ module Webhooks
         type: "text",
         text: "ボタンからご記録ください 🐾"
       })
+    end
+
+    def handle_postback(event)
+      line_user_id = event["source"]["userId"]
+      data = Rack::Utils.parse_query(event.dig("postback", "data"))
+
+      user = User.find_by(line_user_id: line_user_id)
+      return unless user
+
+      if data["action"] == "walk_select"
+        reply_walk_quick_reply(event["replyToken"])
+        return
+      end
+
+      care_type = data["care_type"]
+      return unless CareRecord::CARE_TYPES.include?(care_type)
+
+      dog_id = data["dog_id"]
+      if dog_id.present?
+        dog = user.dogs.find_by(id: dog_id)
+        return unless dog
+        create_care_record_and_reply(event["replyToken"], user, dog, care_type)
+      else
+        dogs = user.dogs
+        if dogs.count == 1
+          create_care_record_and_reply(event["replyToken"], user, dogs.first, care_type)
+        else
+          reply_dog_select_quick_reply(event["replyToken"], dogs, care_type)
+        end
+      end
+    end
+
+    def create_care_record_and_reply(reply_token, user, dog, care_type)
+      CareRecord.create!(
+        dog: dog,
+        user: user,
+        care_type: care_type,
+        recorded_at: Time.current
+      )
+
+      label = CARE_TYPE_LABELS[care_type]
+      time_str = Time.current.strftime("%H:%M")
+      client.reply_message(reply_token, {
+        type: "text",
+        text: "#{dog.name}：#{label}を記録しました（#{time_str}）🐾"
+      })
+    end
+
+    def reply_walk_quick_reply(reply_token)
+      client.reply_message(reply_token, {
+        type: "text",
+        text: "どちらのコースでしたか？",
+        quickReply: {
+          items: [
+            quick_reply_postback("ショートコース", "care_type=walk_short"),
+            quick_reply_postback("ロングコース",   "care_type=walk_long")
+          ]
+        }
+      })
+    end
+
+    def reply_dog_select_quick_reply(reply_token, dogs, care_type)
+      items = dogs.map do |dog|
+        quick_reply_postback(dog.name, "care_type=#{care_type}&dog_id=#{dog.id}")
+      end
+
+      client.reply_message(reply_token, {
+        type: "text",
+        text: "どの子の記録ですか？",
+        quickReply: { items: items }
+      })
+    end
+
+    def quick_reply_postback(label, data)
+      {
+        type: "action",
+        action: { type: "postback", label: label, data: data, displayText: label }
+      }
     end
 
     def fetch_profile(line_user_id)
