@@ -75,6 +75,9 @@ module Webhooks
       care_type = data["care_type"]
       return unless CareRecord::CARE_TYPES.include?(care_type)
 
+      # dog_idはLINEのQuick Replyで犬を選んだときにpostback.dataに付与される。
+      # 多頭飼いの場合は一度reply_dog_select_quick_replyで犬選択をLINEに問い合わせ、
+      # ユーザーが選択した後に改めてdog_id付きのpostbackが来る。
       dog_id = data["dog_id"]
       if dog_id.present?
         dog = user.dogs.find_by(id: dog_id)

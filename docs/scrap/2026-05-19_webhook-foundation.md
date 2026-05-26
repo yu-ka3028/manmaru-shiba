@@ -59,6 +59,59 @@ LINE Webhook の follow イベントには `replyToken` が存在しない。
 
 ---
 
+## デプロイまでの道のり（つまりポイント記録）
+
+Rails API only のバックエンドと Next.js フロントエンドをそれぞれ別サービスにデプロイするのが初めてだったため、設定漏れが重なった。
+
+### Render（バックエンド）でハマったこと
+
+**① `config/master.key` を誤ってコミット**
+- `--skip-git` で Rails を生成したため `.gitignore` に `master.key` が含まれなかった
+- GitHub の Secret Scanning が検知。再生成して `.gitignore` に追加した
+- → **対策：Rails 新規作成時は必ず `master.key` を `.gitignore` に追加する**
+
+**② `line-bot-api` gem のバージョン問題**
+- `gem "line-bot-api"` でインストールされたのは v2.7.0 だったが、コードは v1.x の API（`Line::Bot::Client`）で書いていた
+- v2.x では `Line::Bot::V2::MessagingApi` に API が変わっており、本番で `NameError` が発生
+- → v1.x に固定（`~> 1.0`）して対処。v2 移行は issue #42 に積み残し
+
+**③ 署名検証が常に 400 になる**
+- `LINE_CHANNEL_SECRET` に **LINE ログインチャネル**のシークレットを設定していた
+- 正しくは **Messaging API チャネル**のシークレット
+- → **Messaging API チャネルとログインチャネルは別物。使い分けに注意**
+
+**④ DB 接続エラー（IPv6 unreachable）**
+- Supabase のデフォルト接続文字列（Direct connection / ポート5432）を使っていた
+- Render の無料プランは IPv6 非対応のため接続不可
+- → Session mode（ポート 6543）の接続文字列に変更して解決
+
+**⑤ `users` テーブルが存在しない**
+- Render の無料プランは SSH アクセス不可のため `rails db:migrate` を手動実行できない
+- → Start Command を `bundle exec rails db:migrate && bundle exec rails server -b 0.0.0.0` にして解決
+
+---
+
+### Vercel（フロントエンド）でハマったこと
+
+**⑥ `/setup`・`/join`・`/settings` が 404**
+- Vercel のビルドで Route 一覧に 3 ページが出ず、何度直しても解決しなかった
+- 原因は **Vercel の Git 連携が設定されていなかった**こと
+- Git 連携なしの状態では push しても自動デプロイが発火せず、古いコミットのまま動いていた
+- → GitHub リポジトリを Vercel に連携し直すことで解決
+- → **Root Directory を `frontend` に設定するのは Git 連携後でないと「ディレクトリが存在しない」エラーになる**
+
+**⑦ `npm run vercel-build` エラー**
+- Git 連携後に Root Directory が未設定（`/`）になっており、Vercel がリポジトリルートからビルドしようとした
+- `frontend/` に `vercel-build` スクリプトが存在しないためエラー
+- → Root Directory を `frontend` に設定して解決
+
+**⑧ LIFF を開くと「this channel is now developing status」**
+- LINE ログインチャネルが開発中ステータスのままだった
+- 開発者ロール以外のユーザーは LIFF にアクセスできない
+- → チャネルを公開済みステータスに変更して解決
+
+---
+
 ## 言語化チェックリスト
 
 - [x] LINE Webhookの署名検証は何をどう確認しているか説明できるか
