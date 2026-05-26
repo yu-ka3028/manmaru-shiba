@@ -11,6 +11,7 @@ interface LiffProfile {
 
 interface UseLiffResult {
   profile: LiffProfile | null
+  accessToken: string | null
   isLoading: boolean
   isInClient: boolean
   error: string | null
@@ -18,6 +19,7 @@ interface UseLiffResult {
 
 export function useLiff(): UseLiffResult {
   const [profile, setProfile] = useState<LiffProfile | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isInClient, setIsInClient] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,6 +42,7 @@ export function useLiff(): UseLiffResult {
           liff.login()
           return
         }
+        setAccessToken(liff.getAccessToken())
         return liff.getProfile()
       })
       .then((p) => {
@@ -53,5 +56,5 @@ export function useLiff(): UseLiffResult {
       })
   }, [])
 
-  return { profile, isLoading, isInClient, error }
+  return { profile, accessToken, isLoading, isInClient, error }
 }
