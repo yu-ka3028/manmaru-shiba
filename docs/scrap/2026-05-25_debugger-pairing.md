@@ -109,9 +109,20 @@ controller.send(:handle_postback, event)
 
 ## 言語化チェックリスト
 
-- [ ] `next` と `step` の違いを説明できるか？
-- [ ] `step` で意図しないメソッドに入ったときの対処法（`finish`）を説明できるか？
-- [ ] `reload!` 後にインスタンスを作り直す理由を説明できるか？
-- [ ] `binding.irb` と `binding.pry` の違いを説明できるか？（pryは別gemが必要）
-- [ ] `send` をprivateメソッドに使う理由を説明できるか？
-- [ ] `validates uniqueness` とDB UNIQUE制約の2段構えの理由を説明できるか？
+- [x] `next` と `step` の違いを説明できるか？
+  - `next` は今の行を実行して次の行へ進む（メソッドの中には入らない）。`step` は今の行で呼ばれるメソッドの中に入る。引数の中にメソッド呼び出しがあると意図しない方に入ってしまうので、変数に切り出してから `step` するのがコツ。
+
+- [x] `step` で意図しないメソッドに入ったときの対処法（`finish`）を説明できるか？
+  - `finish` で今いるメソッドを抜けて呼び出し元に戻れる。ActiveRecordの内部に潜ってしまったときは `finish` を繰り返して自分のコードまで戻る。予防策は引数のメソッド呼び出しを変数に切り出しておくこと。
+
+- [x] `reload!` 後にインスタンスを作り直す理由を説明できるか？
+  - `reload!` はクラスの定義を再読み込みするが、既に作成済みのインスタンスは古いクラスへの参照を持ち続けるため。`controller = Webhooks::LineController.new` で新しいクラスからインスタンスを作り直す必要がある。
+
+- [x] `binding.irb` と `binding.pry` の違いを説明できるか？（pryは別gemが必要）
+  - `binding.irb` はRuby標準で追加インストール不要。`binding.pry` は `pry` gemが必要で、色付き表示などの拡張機能がある。gemが入っていない状態で `binding.pry` を使うと `NoMethodError` が出る。
+
+- [x] `send` をprivateメソッドに使う理由を説明できるか？
+  - `private` メソッドはクラスの外から直接呼び出せない。`send` はその制限を回避してprivateメソッドを強制的に呼び出せる。`rails c` でテストするときに使った。
+
+- [x] `validates uniqueness` とDB UNIQUE制約の2段構えの理由を説明できるか？
+  - `validates uniqueness`（Ruby側）は早めにエラーを返してユーザーに伝える役割。DB UNIQUE制約は最終的な整合性の保証。同時リクエストが来た場合はRuby側のチェックをすり抜けることがあるので、DB側の制約が本当の砦になる。

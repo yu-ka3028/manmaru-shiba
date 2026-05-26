@@ -87,11 +87,26 @@ ActiveRecordのthrough-through（二段）はサポートされない。
 
 ## 言語化チェックリスト
 
-- [ ] `recorded_at` と `created_at` をなぜ分けるか説明できるか？
-- [ ] `group_members` の複合ユニーク制約がなぜ必要か説明できるか？
-- [ ] Postbackのdata文字列をどうパースしているか説明できるか？
-- [ ] 多頭飼いのQuick Replyでcare_typeを引き継ぐ仕組みを説明できるか？
-- [ ] User#dogsがメソッド定義になった理由（has_many through-throughの制限）を説明できるか？
-- [ ] `CareRecord::CARE_TYPES` を enum にしなかった理由を説明できるか？
-- [ ] `CARE_TYPE_LABELS` をコントローラーに置いた理由と、フロントバック分離構成でのトレードオフを説明できるか？
-- [ ] サービスオブジェクトに切り出さなかった理由と、切り出すべき判断基準を説明できるか？
+- [x] `recorded_at` と `created_at` をなぜ分けるか説明できるか？
+  - 記録日時と作成日時は別物。後付け記録（記録忘れ）に対応するため分けている。タイムライン表示・アラート計算は `recorded_at` を基準にする。
+
+- [x] `group_members` の複合ユニーク制約がなぜ必要か説明できるか？
+  - 同じユーザーが同じグループに二重登録されることを防ぐため。`user_id` だけにユニーク制約をかけると1ユーザーが1グループにしか入れなくなるので、`(group_id, user_id)` の組み合わせに制約をかける。
+
+- [x] Postbackのdata文字列をどうパースしているか説明できるか？
+  - `Rack::Utils.parse_query` でクエリ文字列（`"care_type=pee&dog_id=1"`）をRubyのハッシュ（`{ "care_type" => "pee", "dog_id" => "1" }`）に変換している。
+
+- [x] 多頭飼いのQuick Replyでcare_typeを引き継ぐ仕組みを説明できるか？
+  - Quick Replyのボタンを作るときに `"care_type=#{care_type}&dog_id=#{dog.id}"` と care_type を data に埋め込んでいる。犬を選んだ後のpostbackに両方が含まれた状態で来る。
+
+- [x] User#dogsがメソッド定義になった理由（has_many through-throughの制限）を説明できるか？
+  - User→groups→dogsと2段経由が必要だが、ActiveRecordのthrough-through（二段）はサポートされない。`joins(group: :group_members).where(...)` で明示的にSQLを書くことで対応した。
+
+- [x] `CareRecord::CARE_TYPES` を enum にしなかった理由を説明できるか？
+  - DBに整数で保存されると直接見たとき意味が分かりにくい。またcare_typeはステータス変更操作が不要なので `pee?` / `pee!` のようなenumの便利メソッドが不要。定数＋inclusionバリデーションの方がシンプル。
+
+- [x] `CARE_TYPE_LABELS` をコントローラーに置いた理由と、フロントバック分離構成でのトレードオフを説明できるか？
+  - LINEへの返信用の表示名なのでモデル（DBの値）ではなくコントローラーに置いた。フロントバック分離構成では同じラベルがRails（Webhook返信用）とNext.js（画面表示用）の2箇所に存在するトレードオフがある。Railsモノリスなら `I18n`（`ja.yml`）で一元管理できるが分離構成ではやむを得ない。
+
+- [x] サービスオブジェクトに切り出さなかった理由と、切り出すべき判断基準を説明できるか？
+  - MVP段階で今の規模では1メソッドに収まるため。「シンプルに動くものを先に作る、複雑になったら切り出す」というRailsの哲学に沿った判断。アラートや通知種類が増えたタイミングで `CareRecordCreator` のようなサービスオブジェクトへの切り出しを検討する。
