@@ -51,7 +51,7 @@ Phase 4：計測・判断
 ### Step 3：バックエンド
 - [x] Webhook基盤 → #20
 - [x] ケア記録（ボタン→DB）→ #21
-- [ ] 状態確認Flex Message → #22
+- [x] 状態確認Flex Message → #22
 - [ ] 排泄アラート → #8
 
 ### Step 4：フロント→API接続

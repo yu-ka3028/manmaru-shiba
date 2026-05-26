@@ -72,6 +72,23 @@ module Webhooks
         return
       end
 
+      if data["action"] == "status_check"
+        dog_id = data["dog_id"]
+        if dog_id.present?
+          dog = user.dogs.find_by(id: dog_id)
+          return unless dog
+          reply_status_flex_message(event["replyToken"], dog)
+        else
+          dogs = user.dogs
+          if dogs.count == 1
+            reply_status_flex_message(event["replyToken"], dogs.first)
+          else
+            reply_status_dog_select_quick_reply(event["replyToken"], dogs)
+          end
+        end
+        return
+      end
+
       care_type = data["care_type"]
       return unless CareRecord::CARE_TYPES.include?(care_type)
 
@@ -140,6 +157,97 @@ module Webhooks
         type: "action",
         action: { type: "postback", label: label, data: data, displayText: label }
       }
+    end
+
+    def reply_status_dog_select_quick_reply(reply_token, dogs)
+      items = dogs.map do |dog|
+        quick_reply_postback(dog.name, "action=status_check&dog_id=#{dog.id}")
+      end
+      client.reply_message(reply_token, {
+        type: "text",
+        text: "どの子の状態を確認しますか？",
+        quickReply: { items: items }
+      })
+    end
+
+    def reply_status_flex_message(reply_token, dog)
+      status = dog.latest_care_status
+      alert_settings = dog.alert_settings.index_by(&:care_type)
+      client.reply_message(reply_token, build_status_flex_message(dog, status, alert_settings))
+    end
+
+    def build_status_flex_message(dog, status, alert_settings)
+      {
+        type: "flex",
+        altText: "#{dog.name} の状態",
+        contents: {
+          type: "bubble",
+          header: {
+            type: "box",
+            layout: "vertical",
+            backgroundColor: "#F5F0E8",
+            contents: [
+              { type: "text", text: "#{dog.name} の状態", weight: "bold", size: "lg", color: "#4A3728" }
+            ]
+          },
+          body: {
+            type: "box",
+            layout: "vertical",
+            spacing: "md",
+            contents: [
+              status_row("💧", "おしっこ", elapsed_text(status[:pee]),  alert_exceeded?(status[:pee],  alert_settings["pee"])),
+              status_row("💩", "うんち",   elapsed_text(status[:poop]), alert_exceeded?(status[:poop], alert_settings["poop"])),
+              status_row("🦴", "散歩",     "今日#{status[:walk_today_count]}回", false),
+              status_row("🍚", "ごはん",   meal_text(status[:meal]), false)
+            ]
+          },
+          footer: {
+            type: "box",
+            layout: "vertical",
+            contents: [
+              {
+                type: "button",
+                style: "link",
+                action: {
+                  type: "uri",
+                  label: "記録を修正する",
+                  uri: "#{ENV.fetch('LIFF_BASE_URL')}/timeline"
+                }
+              }
+            ]
+          }
+        }
+      }
+    end
+
+    def status_row(emoji, label, value_text, alert)
+      {
+        type: "box",
+        layout: "horizontal",
+        contents: [
+          { type: "text", text: "#{emoji} #{label}", flex: 2, size: "sm", color: "#555555" },
+          { type: "text", text: "#{value_text}#{alert ? ' ⚠️' : ''}", flex: 3, size: "sm", align: "end", color: alert ? "#CC0000" : "#333333", wrap: true }
+        ]
+      }
+    end
+
+    def elapsed_text(record)
+      return "記録なし" unless record
+
+      minutes = ((Time.current - record.recorded_at) / 60).to_i
+      minutes < 60 ? "#{minutes}分前" : "#{minutes / 60}時間前"
+    end
+
+    def meal_text(record)
+      return "記録なし" unless record
+      record.recorded_at.strftime("%H:%M")
+    end
+
+    def alert_exceeded?(record, alert_setting)
+      return false unless record && alert_setting
+
+      elapsed_hours = (Time.current - record.recorded_at) / 3600.0
+      elapsed_hours > alert_setting.interval_hours
     end
 
     def fetch_profile(line_user_id)
