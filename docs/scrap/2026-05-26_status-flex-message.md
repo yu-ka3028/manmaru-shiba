@@ -58,10 +58,23 @@ issue #22のモック通り。「最後の食事が何時か」は経過時間�
 
 ## 言語化チェックリスト
 
-- [ ] なぜFlex Messageの組み立てをコントローラのprivateメソッドに置いたのか（サービスオブジェクトにしなかった理由）
-- [ ] `Dog#latest_care_status` をモデルに置いた理由は？Active Recordとしての判断軸は？
-- [ ] `alert_settings.index_by(&:care_type)` で何をしているか（なぜHashにするのか）
-- [ ] `walk_today_count` のクエリ（`beginning_of_day..` の書き方）
-- [ ] `⚠️` の判定：アラート設定がない犬への対応はどうなっているか
-- [ ] 多頭飼いの状態確認フロー：`action=status_check` → Quick Reply → `action=status_check&dog_id=X` の流れ
-- [ ] `elapsed_text` と `meal_text` を分けた意図
+- [x] なぜFlex Messageの組み立てをコントローラのprivateメソッドに置いたのか（サービスオブジェクトにしなかった理由）
+  - MVPの段階では動くものを優先。サービスオブジェクトにするメリット（複数箇所から呼ばれる・テスト分離・ロジックの複雑化）が出たタイミングで切り分ける。今は1箇所からしか呼ばれていないのでprivateメソッドで十分。
+
+- [x] `Dog#latest_care_status` をモデルに置いた理由は？Active Recordとしての判断軸は？
+  - DBのデータを処理してwebhook経由でLINEに送る処理なので、DBの知識はモデルに閉じ込める。`Dog` に `has_many :care_records` / `has_many :alert_settings` のリレーションが書いてあるからこそ、モデルだけで完結できる。DDDだとRepositoryが担う部分だが、Active Recordはモデルがリレーションもアクセスも全部知っているという設計。
+
+- [x] `alert_settings.index_by(&:care_type)` で何をしているか（なぜHashにするのか）
+  - 配列をHashに変換して、care_typeをキーに一発で取れるようにしている。Flex Messageで4回参照するので、毎回 `find` で検索するより `alert_settings["pee"]` とキー指定する方が効率的かつ読みやすい。
+
+- [x] `walk_today_count` のクエリ（`beginning_of_day..` の書き方）
+  - `0..1` のように終端を作らず `0..` とすると「0を含む上限なし」の範囲になる。`beginning_of_day..` で「今日の0時以降のレコードをすべて取る」という意味。SQLでは `WHERE recorded_at >= '今日の00:00:00'` に変換される。
+
+- [x] `⚠️` の判定：アラート設定がない犬への対応はどうなっているか
+  - 犬のアラート設定レコード自体がなければ `alert_settings["pee"]` は `nil` になる。`alert_exceeded?` の先頭で `return false unless record && alert_setting` としているので、`nil` が渡されると即 `false` を返す → ⚠️は出ない。DBのデフォルト値（`interval_hours: 4`）はあくまでレコード新規作成時のデフォルトで、レコードがない場合には使われない。
+
+- [x] 多頭飼いの状態確認フロー：`action=status_check` → Quick Reply → `action=status_check&dog_id=X` の流れ
+  - 最初の `action=status_check` では犬が特定できないので、Quick Replyに `action=status_check&dog_id=X` を仕込んで返す。ユーザーが犬を選ぶと2回目のpostbackが来て犬が確定する。`dog_id` と `action` を両方持って返ってくる2段階の仕組み。
+
+- [x] `elapsed_text` と `meal_text` を分けた意図
+  - おしっこ・うんちは「どれくらい経ったか」が重要（次のお世話タイミング・⚠️判定に繋がる）→ 経過時間表示。ごはんは「何時に食べたか」の方が直感的（その日によって変わるし緊急度が低い）→ HH:MM表示。ユーザーが何を知りたいかで表示形式を変えた。
