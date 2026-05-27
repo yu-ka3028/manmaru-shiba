@@ -1,20 +1,24 @@
 "use client"
 
-
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense } from "react"
 import { useLiff } from "@/hooks/use-liff"
+import { toast, Toaster } from "sonner"
 import { ShibaFace } from "@/components/shiba-icons"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
 
-const MOCK_GROUP_NAME = "田中家"
+interface JoinContentProps {
+  accessToken: string
+}
 
-function JoinContent() {
+function JoinContent({ accessToken }: JoinContentProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get("token")
+  const inviteToken = searchParams.get("token")
+  const [isJoining, setIsJoining] = useState(false)
 
-  if (!token) {
+  if (!inviteToken) {
     return (
       <div className="text-center space-y-3">
         <p className="text-destructive font-semibold">招待リンクが無効です</p>
@@ -25,29 +29,39 @@ function JoinContent() {
     )
   }
 
+  const handleJoin = async () => {
+    setIsJoining(true)
+    try {
+      const { token } = await api.auth.line(accessToken)
+      await api.groups.join(token, inviteToken)
+      router.push("/timeline")
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "エラーが発生しました")
+      setIsJoining(false)
+    }
+  }
+
   return (
     <div className="text-center space-y-8">
-      {/* グループ名 */}
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">招待されています</p>
+        <p className="text-sm text-muted-foreground">招待が届いています</p>
         <h2 className="text-2xl font-bold text-foreground tracking-tight">
-          <span className="text-primary">{MOCK_GROUP_NAME}</span>に
-          <br />
-          参加しますか？
+          グループに参加しますか？
         </h2>
       </div>
 
-      {/* ボタン群 */}
       <div className="space-y-3">
         <Button
-          onClick={() => router.push("/timeline")}
+          onClick={handleJoin}
+          disabled={isJoining}
           className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
         >
-          参加する
+          {isJoining ? "参加中..." : "参加する"}
         </Button>
         <Button
           variant="ghost"
           onClick={() => router.push("/")}
+          disabled={isJoining}
           className="w-full h-12 text-muted-foreground hover:text-foreground"
         >
           参加しない
@@ -58,7 +72,7 @@ function JoinContent() {
 }
 
 export default function JoinPage() {
-  const { isLoading, isInClient, error } = useLiff()
+  const { isLoading, isInClient, accessToken, error } = useLiff()
 
   if (isLoading) {
     return (
@@ -68,7 +82,7 @@ export default function JoinPage() {
     )
   }
 
-  if (error || !isInClient) {
+  if (error || !isInClient || !accessToken) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center px-8">
         <div className="text-center space-y-2">
@@ -83,8 +97,8 @@ export default function JoinPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30">
+      <Toaster position="top-center" />
       <div className="mx-auto max-w-md px-5 pt-12 pb-16">
-        {/* ヘッダー */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
@@ -97,7 +111,7 @@ export default function JoinPage() {
         </div>
 
         <Suspense fallback={<p className="text-center text-muted-foreground text-sm">読み込み中...</p>}>
-          <JoinContent />
+          <JoinContent accessToken={accessToken} />
         </Suspense>
       </div>
     </div>
