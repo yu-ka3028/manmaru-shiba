@@ -62,9 +62,16 @@ userに紐づくdogのみアクセスできるので、他グループのdogは�
 
 ## 言語化チェックリスト
 
-- [ ] JWTとLIFF accessTokenの違いを説明できるか（何を認証しているか）
-- [ ] `resource`（単数）と`resources`（複数）の違いと今回どちらを使ったか
-- [ ] `find_or_initialize_by` とは何か。なぜ`find_or_create_by`ではないか
-- [ ] `Promise.all` はなぜ使うか。`await` を2回書くのと何が違うか
-- [ ] GoodJobのcron機能がPostgreSQLだけで動く理由
-- [ ] なぜ`ENV.fetch("JWT_SECRET")`か。`ENV[]`との違いは
+- [x] JWTとLIFF accessTokenの違いを説明できるか（何を認証しているか）
+  > JWTはRails側でJWT_SECRETを使って発行・管理する。フロントにはパスポートのように「認証OK」の証として渡すが、秘匿情報（JWT_SECRET）はサーバーから出ない。ペイロードにはDBのuser_idが入っている。
+  > LIFF accessTokenはLINEが発行するトークン。「このユーザーはLINEで認証済み」を証明する。ただしline_user_id自体はトークンに含まれておらず、このトークンを使ってLINEの /v2/profile を叩いて初めてline_user_idが取得できる。
+- [x] `resource`（単数）と`resources`（複数）の違いと今回どちらを使ったか
+  > `resources`（複数）は同じ種類のレコードが複数あって、どれか1つを特定するために `:id` がURLに入る。`resource`（単数）はその文脈で1つしか存在しないのでURLに `:id` が入らない。今回は `resource :alert_settings` を使った。犬（`:dog_id`）が決まればアラート設定も一意に決まるため `:id` 不要。
+- [x] `find_or_initialize_by` とは何か。なぜ`find_or_create_by`ではないか
+  > `find_or_initialize_by` は該当レコードがなければメモリ上に作るだけでDBには保存しない。値を全部セットしてから `.save` を呼ぶことでバリデーションを通してから保存できる。`find_or_create_by` はブロックで必要な値が全部揃う前提でsaveまで一気にやる。AlertSettingには `interval_hours presence: true` のバリデーションがあるため、属性をセットする前にINSERTしようとする `find_or_create_by` だとバリデーションエラーになる。
+- [x] `Promise.all` はなぜ使うか。`await` を2回書くのと何が違うか
+  > `await` を2回書くと順番に実行される（peeが終わってからpoopが始まる）。`Promise.all` は複数の処理を同時にスタートさせて両方終わるまで待つ。peeとpoopは互いに依存していないので並行して処理できる。合計時間が「pee+poop」ではなく「長い方の時間」で済む。
+- [x] GoodJobのcron機能がPostgreSQLだけで動く理由
+  > GoodJobはジョブをRedisではなくPostgreSQLのテーブルに保存する。SidekiqはRedisが別途必要だが、GoodJobはすでに使っているSupabase（PostgreSQL）だけで完結するのでRedisのコストがゼロ。
+- [x] なぜ`ENV.fetch("JWT_SECRET")`か。`ENV[]`との違いは
+  > `ENV[]` は環境変数が設定されていなければ `nil` を返してそのまま動き続ける。`ENV.fetch` は設定されていなければ起動時点で `KeyError` を出してクラッシュする。JWT_SECRETがnilのまま動くとJWTの署名がおかしくなってから気づくことになるため、設定漏れを早期に検出するために `ENV.fetch` を使う。
