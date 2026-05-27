@@ -1,7 +1,6 @@
 "use client"
 
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLiff } from "@/hooks/use-liff"
 import { toast, Toaster } from "sonner"
@@ -16,18 +15,64 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-const MOCK_SETTINGS = {
-  peeAlertHours: "4",
-  poopAlertHours: "4",
-}
+const RAILS_API_URL = process.env.NEXT_PUBLIC_RAILS_API_URL ?? ""
 
 const HOUR_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i + 1))
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { isLoading, isInClient, error } = useLiff()
-  const [peeHours, setPeeHours] = useState(MOCK_SETTINGS.peeAlertHours)
-  const [poopHours, setPoopHours] = useState(MOCK_SETTINGS.poopAlertHours)
+  const { isLoading, isInClient, accessToken, error } = useLiff()
+  const [jwtToken, setJwtToken] = useState<string | null>(null)
+  const [dogId, setDogId] = useState<number | null>(null)
+  const [peeHours, setPeeHours] = useState("4")
+  const [poopHours, setPoopHours] = useState("4")
+  const [isFetching, setIsFetching] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // LIFFロード完了後にJWT取得→アラート設定取得
+  useEffect(() => {
+    if (isLoading || !isInClient || !accessToken) return
+
+    const init = async () => {
+      setIsFetching(true)
+      try {
+        // LIFF accessToken → JWT
+        const authRes = await fetch(`${RAILS_API_URL}/api/v1/auth/line`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        })
+        if (!authRes.ok) throw new Error("認証に失敗しました")
+        const authData = await authRes.json()
+
+        const token: string = authData.token
+        const firstDog = authData.dogs?.[0]
+        if (!firstDog) throw new Error("犬の情報が見つかりません")
+
+        setJwtToken(token)
+        setDogId(firstDog.id)
+
+        // アラート設定取得
+        const settingsRes = await fetch(
+          `${RAILS_API_URL}/api/v1/dogs/${firstDog.id}/alert_settings`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (!settingsRes.ok) throw new Error("設定の取得に失敗しました")
+        const settings: { care_type: string; interval_hours: number }[] = await settingsRes.json()
+
+        settings.forEach((s) => {
+          if (s.care_type === "pee") setPeeHours(String(s.interval_hours))
+          if (s.care_type === "poop") setPoopHours(String(s.interval_hours))
+        })
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : "エラーが発生しました")
+      } finally {
+        setIsFetching(false)
+      }
+    }
+
+    init()
+  }, [isLoading, isInClient, accessToken])
 
   if (isLoading) {
     return (
@@ -50,8 +95,34 @@ export default function SettingsPage() {
     )
   }
 
-  const handleSave = () => {
-    toast.success("設定を保存しました")
+  const handleSave = async () => {
+    if (!jwtToken || !dogId) return
+    setIsSaving(true)
+    try {
+      await Promise.all([
+        fetch(`${RAILS_API_URL}/api/v1/dogs/${dogId}/alert_settings`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+          body: JSON.stringify({ care_type: "pee", interval_hours: Number(peeHours) }),
+        }),
+        fetch(`${RAILS_API_URL}/api/v1/dogs/${dogId}/alert_settings`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+          body: JSON.stringify({ care_type: "poop", interval_hours: Number(poopHours) }),
+        }),
+      ])
+      toast.success("設定を保存しました")
+    } catch {
+      toast.error("保存に失敗しました")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -86,7 +157,7 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">おしっこアラート</label>
-            <Select value={peeHours} onValueChange={setPeeHours}>
+            <Select value={peeHours} onValueChange={setPeeHours} disabled={isFetching}>
               <SelectTrigger className="w-full h-12 rounded-xl border-border bg-card">
                 <SelectValue />
               </SelectTrigger>
@@ -102,7 +173,7 @@ export default function SettingsPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">うんちアラート</label>
-            <Select value={poopHours} onValueChange={setPoopHours}>
+            <Select value={poopHours} onValueChange={setPoopHours} disabled={isFetching}>
               <SelectTrigger className="w-full h-12 rounded-xl border-border bg-card">
                 <SelectValue />
               </SelectTrigger>
@@ -118,9 +189,10 @@ export default function SettingsPage() {
 
           <Button
             onClick={handleSave}
+            disabled={isFetching || isSaving || !jwtToken}
             className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
           >
-            保存する
+            {isSaving ? "保存中..." : "保存する"}
           </Button>
         </div>
       </div>
