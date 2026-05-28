@@ -9,6 +9,7 @@ import { z } from "zod"
 import { format } from "date-fns"
 import { ja } from "date-fns/locale"
 import { CalendarIcon } from "lucide-react"
+import { toast, Toaster } from "sonner"
 
 import { ShibaFace } from "@/components/shiba-icons"
 import { Button } from "@/components/ui/button"
@@ -21,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { api } from "@/lib/api"
 
 const setupSchema = z.object({
   groupName: z.string().min(1, "グループ名を入力してください"),
@@ -32,7 +34,7 @@ type SetupFormValues = z.infer<typeof setupSchema>
 
 export default function SetupPage() {
   const router = useRouter()
-  const { isLoading, isInClient, error } = useLiff()
+  const { isLoading, isInClient, accessToken, error } = useLiff()
   const [calendarOpen, setCalendarOpen] = useState(false)
   const {
     register,
@@ -67,13 +69,25 @@ export default function SetupPage() {
     )
   }
 
-  const onSubmit = async (_data: SetupFormValues) => {
-    // モック段階：APIは呼ばずそのままリダイレクト
-    router.push("/timeline")
+  const onSubmit = async (data: SetupFormValues) => {
+    if (!accessToken) return
+    try {
+      const { token } = await api.auth.line(accessToken)
+      const group = await api.groups.create(token, data.groupName)
+      await api.dogs.create(token, {
+        group_id: group.id,
+        name: data.dogName,
+        birth_date: format(data.dogBirthday, "yyyy-MM-dd"),
+      })
+      router.push("/timeline")
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "エラーが発生しました")
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30">
+      <Toaster position="top-center" />
       <div className="mx-auto max-w-md px-5 pt-12 pb-16">
         {/* ヘッダー */}
         <div className="text-center mb-10">
