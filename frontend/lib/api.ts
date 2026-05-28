@@ -65,4 +65,11 @@ export const api = {
         body: JSON.stringify(params),
       }),
   },
+  careRecords: {
+    index: (token: string, dogId: number) =>
+      request<{ id: number; care_type: string; recorded_at: string; user_name: string }[]>(
+        `/api/v1/dogs/${dogId}/care_records`,
+        { token }
+      ),
+  },
 }

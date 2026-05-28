@@ -57,7 +57,7 @@ Phase 4：計測・判断
 ### Step 4：フロント→API接続
 - [x] APIクライアント基盤 + /setup API接続 → #60 #61
 - [x] /join API接続 → #62
-- [ ] /timeline API接続 → #63 #64
+- [x] /timeline API接続 → #63 #64
 - [ ] ケア記録の編集・削除 → #65 #66
 
 ---

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLiff } from "@/hooks/use-liff"
 import { ShibaHeader, FamilyCircle } from "@/components/shiba-header"
@@ -8,6 +9,14 @@ import { TimelineItem, type ActivityType } from "@/components/timeline-card"
 import { Plus, PencilLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PawPrint } from "@/components/shiba-icons"
+import { api } from "@/lib/api"
+
+interface CareRecord {
+  id: number
+  care_type: string
+  recorded_at: string
+  user_name: string
+}
 
 interface TimelineEntry {
   id: string
@@ -18,52 +27,67 @@ interface TimelineEntry {
   time: string
 }
 
-const timelineData: TimelineEntry[] = [
-  {
-    id: "1",
-    type: "walk",
-    title: "散歩",
-    subtitle: "ロングコース",
-    person: "お母さん",
-    time: "14:00",
-  },
-  {
-    id: "2",
-    type: "food",
-    title: "ごはん",
-    person: "お父さん",
-    time: "12:00",
-  },
-  {
-    id: "3",
-    type: "pee",
-    title: "おしっこ",
-    person: "お母さん",
-    time: "10:30",
-  },
-  {
-    id: "4",
-    type: "walk",
-    title: "散歩",
-    subtitle: "ショートコース",
-    person: "お父さん",
-    time: "8:00",
-  },
-  {
-    id: "5",
-    type: "poop",
-    title: "うんち",
-    person: "お父さん",
-    time: "7:30",
-  },
-]
+const CARE_TYPE_MAP: Record<string, { type: ActivityType; title: string; subtitle?: string }> = {
+  pee:        { type: "pee",  title: "おしっこ" },
+  poop:       { type: "poop", title: "うんち" },
+  meal:       { type: "food", title: "ごはん" },
+  walk_short: { type: "walk", title: "散歩", subtitle: "ショートコース" },
+  walk_long:  { type: "walk", title: "散歩", subtitle: "ロングコース" },
+}
+
+function toTimelineEntry(record: CareRecord): TimelineEntry {
+  const config = CARE_TYPE_MAP[record.care_type] ?? { type: "pee" as ActivityType, title: record.care_type }
+  const time = new Date(record.recorded_at).toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+  return {
+    id: String(record.id),
+    type: config.type,
+    title: config.title,
+    subtitle: config.subtitle,
+    person: record.user_name,
+    time,
+  }
+}
 
 export default function ShibaCareTimeline() {
   const router = useRouter()
-  const { isLoading, isInClient, error } = useLiff()
+  const { isLoading: liffLoading, isInClient, accessToken, error: liffError } = useLiff()
   const statusItems = createDefaultStatusItems()
 
-  if (isLoading) {
+  const [records, setRecords] = useState<TimelineEntry[]>([])
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+  const [dogName, setDogName] = useState<string>("")
+
+  useEffect(() => {
+    if (!accessToken) return
+
+    const fetchRecords = async () => {
+      setIsLoadingRecords(true)
+      setFetchError(null)
+      try {
+        const { token, dogs } = await api.auth.line(accessToken)
+        if (dogs.length === 0) {
+          setFetchError("犬が登録されていません")
+          return
+        }
+        const dog = dogs[0]
+        setDogName(dog.name)
+        const data = await api.careRecords.index(token, dog.id)
+        setRecords(data.map(toTimelineEntry))
+      } catch (e: unknown) {
+        setFetchError(e instanceof Error ? e.message : "データの取得に失敗しました")
+      } finally {
+        setIsLoadingRecords(false)
+      }
+    }
+
+    fetchRecords()
+  }, [accessToken])
+
+  if (liffLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center">
         <p className="text-sm text-muted-foreground">読み込み中...</p>
@@ -71,7 +95,7 @@ export default function ShibaCareTimeline() {
     )
   }
 
-  if (error || !isInClient) {
+  if (liffError || !isInClient) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30 flex items-center justify-center px-8">
         <div className="text-center space-y-2">
@@ -110,12 +134,12 @@ export default function ShibaCareTimeline() {
         <section aria-label="ステータス" className="flex items-center gap-4 mt-2">
           {/* 左: 柴犬と家族の輪 */}
           <div className="shrink-0">
-            <FamilyCircle 
-              dogName="コタロウ" 
-              familyMembers={["お母さん", "お父さん", "お姉ちゃん"]} 
+            <FamilyCircle
+              dogName={dogName || "コタロウ"}
+              familyMembers={["お母さん", "お父さん", "お姉ちゃん"]}
             />
           </div>
-          
+
           {/* 右: サマリー 2x2 */}
           <div className="flex-1 min-w-0">
             <StatusSummary items={statusItems} />
@@ -132,21 +156,49 @@ export default function ShibaCareTimeline() {
               今日の記録
             </h2>
           </div>
-          <div className="relative pl-1 overflow-visible">
-            {timelineData.map((entry, index) => (
-              <TimelineItem
-                key={entry.id}
-                type={entry.type}
-                title={entry.title}
-                subtitle={entry.subtitle}
-                person={entry.person}
-                time={entry.time}
-                isLatest={index === 0}
-                onEdit={() => handleEdit(entry.id)}
-                onDelete={() => handleDelete(entry.id)}
-              />
-            ))}
-          </div>
+
+          {isLoadingRecords && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-3xl bg-secondary/50 animate-pulse"
+                />
+              ))}
+            </div>
+          )}
+
+          {!isLoadingRecords && fetchError && (
+            <div className="text-center py-10 space-y-2">
+              <p className="text-sm font-semibold text-destructive">{fetchError}</p>
+              <p className="text-xs text-muted-foreground">再読み込みしてください</p>
+            </div>
+          )}
+
+          {!isLoadingRecords && !fetchError && records.length === 0 && (
+            <div className="text-center py-10 space-y-2">
+              <p className="text-sm font-semibold text-foreground">まだ記録がありません</p>
+              <p className="text-xs text-muted-foreground">下のボタンから記録を追加しましょう</p>
+            </div>
+          )}
+
+          {!isLoadingRecords && !fetchError && records.length > 0 && (
+            <div className="relative pl-1 overflow-visible">
+              {records.map((entry, index) => (
+                <TimelineItem
+                  key={entry.id}
+                  type={entry.type}
+                  title={entry.title}
+                  subtitle={entry.subtitle}
+                  person={entry.person}
+                  time={entry.time}
+                  isLatest={index === 0}
+                  onEdit={() => handleEdit(entry.id)}
+                  onDelete={() => handleDelete(entry.id)}
+                />
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
