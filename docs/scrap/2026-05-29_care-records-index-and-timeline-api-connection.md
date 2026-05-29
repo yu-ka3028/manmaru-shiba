@@ -58,9 +58,34 @@ DogsController と全く同じパターン。
 
 ## 言語化チェックリスト
 
-- [ ] なぜ `includes(:user)` を使うのか、N+1の仕組みと合わせて説明できるか
-- [ ] `beginning_of_day` は何を返すか。タイムゾーンはどう扱われるか
-- [ ] `@current_user.dogs` の認可ロジックをSQLに落として説明できるか
-- [ ] `useEffect([accessToken])` の依存配列に `accessToken` を入れる理由は何か
-- [ ] なぜ `care_type` のマッピングをフロント側に持たせるか（Rails側に置く案との比較）
-- [ ] スケルトンUIと通常のローディングスピナーの使い分けは何か
+- [x] なぜ `includes(:user)` を使うのか、N+1の仕組みと合わせて説明できるか
+
+  `records.map { |r| r.user.display_name }` のループ内で `:user` を参照するため、`includes(:user)` で事前にまとめてSELECTしておく。これがないとレコード件数分だけSQLが走る（N+1）。`includes` があると `WHERE id IN (...)` の1本にまとまる。複数の家族メンバーがいる場合もまとめて取ってくる。
+
+- [x] `beginning_of_day` は何を返すか。タイムゾーンはどう扱われるか
+
+  `Time.current.beginning_of_day` は今日の00:00:00を返す。`Time.current` はRailsの `config.time_zone` に従う。設定していないとUTCになり、日本時間の朝9時にならないと「今日の記録」が取れないバグになる。今回 `config.time_zone = "Tokyo"` を追加して対処した。
+
+- [x] `@current_user.dogs` の認可ロジックをSQLに落として説明できるか
+
+  User モデルの `dogs` メソッドが `dogs → groups → group_members` と2段階JOINして `group_members.user_id = 現在のユーザーID` で絞り込む。これにより自分が所属するグループの犬だけが返る。`find_by(id: params[:dog_id])` でさらに犬IDで絞るので、他グループの犬IDを渡すと nil → 404になる。
+
+  ```sql
+  SELECT dogs.*
+  FROM dogs
+  INNER JOIN groups ON groups.id = dogs.group_id
+  INNER JOIN group_members ON group_members.group_id = groups.id
+  WHERE group_members.user_id = 現在のユーザーID
+  ```
+
+- [x] `useEffect([accessToken])` の依存配列に `accessToken` を入れる理由は何か
+
+  `useLiff()` は非同期で初期化されるため、コンポーネントマウント時点では `accessToken` がまだ `null`。空配列 `[]` にするとマウント時に1回だけ実行されるが、そのときはnullなのでAPIを呼べない。`[accessToken]` にすることでLIFFの初期化完了後に `null → 実際のトークン` に変わった瞬間に再実行される。`if (!accessToken) return` と組み合わせてnullのときは何もしない。
+
+- [x] なぜ `care_type` のマッピングをフロント側に持たせるか（Rails側に置く案との比較）
+
+  「おしっこ」「散歩」などの表示ラベルはUIの関心事なのでフロント側に閉じる。Railsは `pee` という内部表現を返すだけでよく、それをどう見せるかはフロントが決める。Rails側に日本語を持たせると、将来の多言語対応や表示変更でバックエンドまで修正が必要になる。フロントに閉じていればフロントだけ直せば済む。
+
+- [x] スケルトンUIと通常のローディングスピナーの使い分けは何か
+
+  使い分けの軸は「レイアウトが事前にわかるかどうか」。スケルトンは表示されるコンテンツの形（カードが並ぶなど）が決まっているとき。ガワを先に見せることでレイアウトシフトを防ぎ、体感速度を上げる効果がある。スピナーは何が表示されるかわからない・全画面ブロックしたいとき。今回タイムラインはケア記録カードが並ぶ形が決まっているのでスケルトンを使った。
