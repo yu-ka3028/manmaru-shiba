@@ -8,6 +8,23 @@ import { StatusSummary, createDefaultStatusItems } from "@/components/status-sum
 import { TimelineItem, type ActivityType } from "@/components/timeline-card"
 import { Plus, PencilLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { PawPrint } from "@/components/shiba-icons"
 import { api } from "@/lib/api"
 
@@ -20,6 +37,7 @@ interface CareRecord {
 
 interface TimelineEntry {
   id: string
+  care_type: string
   type: ActivityType
   title: string
   subtitle?: string
@@ -35,6 +53,14 @@ const CARE_TYPE_MAP: Record<string, { type: ActivityType; title: string; subtitl
   walk_long:  { type: "walk", title: "散歩", subtitle: "ロングコース" },
 }
 
+const CARE_TYPE_LABELS: Record<string, string> = {
+  pee: "おしっこ",
+  poop: "うんち",
+  meal: "ごはん",
+  walk_short: "散歩（ショート）",
+  walk_long: "散歩（ロング）",
+}
+
 function toTimelineEntry(record: CareRecord): TimelineEntry {
   const config = CARE_TYPE_MAP[record.care_type] ?? { type: "pee" as ActivityType, title: record.care_type }
   const time = new Date(record.recorded_at).toLocaleTimeString("ja-JP", {
@@ -43,6 +69,7 @@ function toTimelineEntry(record: CareRecord): TimelineEntry {
   })
   return {
     id: String(record.id),
+    care_type: record.care_type,
     type: config.type,
     title: config.title,
     subtitle: config.subtitle,
@@ -60,6 +87,11 @@ export default function ShibaCareTimeline() {
   const [isLoadingRecords, setIsLoadingRecords] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [dogName, setDogName] = useState<string>("")
+  const [authToken, setAuthToken] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [editTarget, setEditTarget] = useState<{ id: string; care_type: string } | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
     if (!accessToken) return
@@ -69,6 +101,7 @@ export default function ShibaCareTimeline() {
       setFetchError(null)
       try {
         const { token, dogs } = await api.auth.line(accessToken)
+        setAuthToken(token)
         if (dogs.length === 0) {
           setFetchError("犬が登録されていません")
           return
@@ -109,11 +142,32 @@ export default function ShibaCareTimeline() {
   }
 
   const handleEdit = (id: string) => {
-    console.log("Edit entry:", id)
+    const record = records.find((r) => r.id === id)
+    if (record) setEditTarget({ id, care_type: record.care_type })
   }
 
-  const handleDelete = (id: string) => {
-    console.log("Delete entry:", id)
+  const handleUpdate = async (care_type: string) => {
+    if (!editTarget || !authToken) return
+    setIsUpdating(true)
+    try {
+      const updated = await api.careRecords.update(authToken, Number(editTarget.id), { care_type })
+      setRecords((prev) => prev.map((r) => (r.id === editTarget.id ? toTimelineEntry(updated) : r)))
+      setEditTarget(null)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId || !authToken) return
+    setIsDeleting(true)
+    try {
+      await api.careRecords.destroy(authToken, Number(deleteTargetId))
+      setRecords((prev) => prev.filter((r) => r.id !== deleteTargetId))
+      setDeleteTargetId(null)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const handleSettings = () => {
@@ -125,6 +179,54 @@ export default function ShibaCareTimeline() {
   }
 
   return (
+    <>
+    <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>記録を削除しますか？</AlertDialogTitle>
+          <AlertDialogDescription>この操作は取り消せません。</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>キャンセル</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isDeleting ? "削除中..." : "削除する"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null) }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>記録を編集</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3 py-4">
+          {Object.entries(CARE_TYPE_LABELS).map(([key, label]) => (
+            <Button
+              key={key}
+              variant={editTarget?.care_type === key ? "default" : "outline"}
+              className="h-12 rounded-2xl"
+              onClick={() => setEditTarget((prev) => prev ? { ...prev, care_type: key } : prev)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setEditTarget(null)} disabled={isUpdating}>
+            キャンセル
+          </Button>
+          <Button onClick={() => handleUpdate(editTarget!.care_type)} disabled={isUpdating}>
+            {isUpdating ? "保存中..." : "保存する"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <div className="relative min-h-screen bg-gradient-to-b from-background via-background to-secondary/30">
       <div className="mx-auto max-w-md px-5 pb-28">
         {/* Header - サービス名と概要 */}
@@ -194,7 +296,7 @@ export default function ShibaCareTimeline() {
                   time={entry.time}
                   isLatest={index === 0}
                   onEdit={() => handleEdit(entry.id)}
-                  onDelete={() => handleDelete(entry.id)}
+                  onDelete={() => setDeleteTargetId(entry.id)}
                 />
               ))}
             </div>
@@ -215,5 +317,6 @@ export default function ShibaCareTimeline() {
         </Button>
       </div>
     </div>
+    </>
   )
 }
