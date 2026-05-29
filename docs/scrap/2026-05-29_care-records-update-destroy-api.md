@@ -76,9 +76,28 @@ end
 
 ## 言語化チェックリスト
 
-- [ ] なぜ update/destroy をネストせずトップレベルに置いたのか？
-- [ ] 404 と 403 の使い分けの考え方を説明できるか？
-- [ ] 204 No Content はいつ使うのか？200 との違いは？
-- [ ] `@current_user.care_records.find_by` で認可が成立する理由を説明できるか？
-- [ ] Strong Parameters はなぜ必要か？`permit` と `require` の役割の違いは？
-- [ ] `find_by` と `find` の違いと、このコードでどちらを使っているか？
+- [x] なぜ update/destroy をネストせずトップレベルに置いたのか？
+  - update/destroy は care_record の id だけで対象が特定できるため、dog_id は不要。`dogs/:dog_id` にネストする理由がない。
+
+- [x] 404 と 403 の使い分けの考え方を説明できるか？
+  - 403を返すと「そのIDのレコードが存在すること」が漏れる。404にすることで「そんなレコードは知らない」と答えられ、他人の記録の存在自体を隠せる。
+  - 参考：401=未認証、403=認可エラー、404=見つからない
+
+- [x] 204 No Content はいつ使うのか？200 との違いは？
+  - 204は「成功したが返すボディがない」。200は「成功＋レスポンスボディあり」。
+  - DELETE後に返すべきデータはないので204が適切。ステータスコードだけで成功が伝わる。
+  - フロント側では `res.status === 204` のとき `.json()` を呼ばないよう処理が必要。
+
+- [x] `@current_user.care_records.find_by` で認可が成立する理由を説明できるか？
+  - JWTで「誰か（`@current_user`）」を特定するのは認証の部分。
+  - `@current_user.care_records` のスコープが `WHERE user_id = 自分のID` を自動でかけるため、他人のIDを指定しても `nil` が返り404になる。JWTだけでは防げないケースをスコープが防いでいる。
+
+- [x] Strong Parameters はなぜ必要か？`permit` と `require` の役割の違いは？
+  - Mass Assignment脆弱性を防ぐため。`permit` で指定していないフィールド（例：`user_id`）を外から書き換えられないようにする。
+  - `require(:care_record)` → リクエストJSONの `care_record` キーを要求する（構造の指定）
+  - `permit(:care_type, :recorded_at)` → その中から受け取っていいカラムを制限する
+
+- [x] `find_by` と `find` の違いと、このコードでどちらを使っているか？
+  - このコードでは `find_by` を使用。
+  - `find` → 見つからないと `ActiveRecord::RecordNotFound` を raise（rescue_fromで拾わないと500になる）
+  - `find_by` → 見つからないと `nil` を返す → `unless record` で明示的に404を返せる
