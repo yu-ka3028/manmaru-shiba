@@ -11,6 +11,8 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :care_records, only: [:update, :destroy]
+
       resources :dogs, only: [:create, :show] do
         resources :care_records, only: [:index, :create]
         resource :alert_settings, only: [:show, :update]

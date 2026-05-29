@@ -29,6 +29,7 @@ async function request<T>(
     throw new ApiError(res.status, message)
   }
 
+  if (res.status === 204) return null as T
   return res.json() as Promise<T>
 }
 
@@ -71,5 +72,12 @@ export const api = {
         `/api/v1/dogs/${dogId}/care_records`,
         { token }
       ),
+    update: (token: string, id: number, params: { care_type: string; recorded_at?: string }) =>
+      request<{ id: number; care_type: string; recorded_at: string; user_name: string }>(
+        `/api/v1/care_records/${id}`,
+        { method: "PATCH", token, body: JSON.stringify({ care_record: params }) }
+      ),
+    destroy: (token: string, id: number) =>
+      request<null>(`/api/v1/care_records/${id}`, { method: "DELETE", token }),
   },
 }
