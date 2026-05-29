@@ -63,8 +63,17 @@ const [isUpdating, setIsUpdating] = useState(false)
 
 ## 言語化チェックリスト
 
-- [ ] なぜ `authToken` をstateに持つのか？useEffectの外で使うためだが、どういう理由でuseEffect内に閉じ込めなかったのか説明できるか
-- [ ] `deleteTargetId` をstateにして `AlertDialog` の `open` に渡すパターンの意図を説明できるか
-- [ ] 削除成功後に `setRecords(prev => prev.filter(...))` でUIを更新している理由（再fetchしない理由）を説明できるか
-- [ ] 編集ダイアログで「ボタン選択 → state更新 → 保存」の流れが、controlled componentの考え方とどう繋がるか説明できるか
-- [ ] `toTimelineEntry(updated)` でAPIレスポンスをそのまま変換して差し替えている理由を説明できるか
+- [x] なぜ `authToken` をstateに持つのか？useEffectの外で使うためだが、どういう理由でuseEffect内に閉じ込めなかったのか説明できるか
+  - トークンは `useEffect` の中でしか取得できない。削除・編集のハンドラは `useEffect` の外にあるので、スコープをまたいで共有するためにstateに保持する。
+
+- [x] `deleteTargetId` をstateにして `AlertDialog` の `open` に渡すパターンの意図を説明できるか
+  - 「ダイアログの表示/非表示」と「削除対象のID」は常にセットで発生する。`deleteTargetId` がnullかどうかで両方を同時に表現できるので、stateを1つにまとめた方がシンプル。
+
+- [x] 削除成功後に `setRecords(prev => prev.filter(...))` でUIを更新している理由（再fetchしない理由）を説明できるか
+  - 削除するIDはボタンを押した時点でわかっている。APIが成功したらそのIDのレコードが消えたことは確定しているので、サーバーに再fetchする必要がない。「知らないことを知るため」に再fetchするが、今回は知らないことがない。
+
+- [x] 編集ダイアログで「ボタン選択 → state更新 → 保存」の流れが、controlled componentの考え方とどう繋がるか説明できるか
+  - controlled componentは「UIの状態はstateが正」という考え方。ボタンを押したら `editTarget.care_type` を更新し、保存時はそのstateの値を直接APIに渡す。DOMから値を取り出すステップがない。uncontrolledの場合は `useRef` でDOM要素を参照して値を取り出す。
+
+- [x] `toTimelineEntry(updated)` でAPIレスポンスをそのまま変換して差し替えている理由を説明できるか
+  - サーバーが保存した実際のデータを使うことで、フロントとDBのズレをなくすため。自分でstateを書き換えると `recorded_at` などサーバー側で更新された値が反映されない可能性がある。
