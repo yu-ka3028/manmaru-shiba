@@ -62,7 +62,7 @@ module Webhooks
 
     def handle_postback(event)
       line_user_id = event["source"]["userId"]
-      data = Rack::Utils.parse_query(event.dig("postback", "data"))
+      data = Rack::Utils.parse_query(event["postback"]["data"])
 
       user = User.find_by(line_user_id: line_user_id)
       return unless user
