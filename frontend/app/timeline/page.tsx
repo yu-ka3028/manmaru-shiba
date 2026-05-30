@@ -103,7 +103,7 @@ export default function ShibaCareTimeline() {
         const { token, dogs } = await api.auth.line(accessToken)
         setAuthToken(token)
         if (dogs.length === 0) {
-          setFetchError("犬が登録されていません")
+          router.replace("/setup")
           return
         }
         const dog = dogs[0]
@@ -171,7 +171,7 @@ export default function ShibaCareTimeline() {
   }
 
   const handleSettings = () => {
-    router.push("/settings")
+    window.location.href = "/settings"
   }
 
   const handleAddEntry = () => {
