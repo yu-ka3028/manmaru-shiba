@@ -8,9 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { format } from "date-fns"
 import { ja } from "date-fns/locale"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Copy, Check, Share2 } from "lucide-react"
 import { toast, Toaster } from "sonner"
-
 import { ShibaFace } from "@/components/shiba-icons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +35,8 @@ export default function SetupPage() {
   const router = useRouter()
   const { isLoading, isInClient, accessToken, error } = useLiff()
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [inviteToken, setInviteToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const {
     register,
     handleSubmit,
@@ -69,6 +70,21 @@ export default function SetupPage() {
     )
   }
 
+  const inviteUrl = inviteToken
+    ? `${window.location.origin}/join?token=${inviteToken}`
+    : ""
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(inviteUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleLineShare = () => {
+    const text = `まんまるしばに招待します！\n${inviteUrl}`
+    window.open(`https://line.me/R/share?text=${encodeURIComponent(text)}`, "_blank")
+  }
+
   const onSubmit = async (data: SetupFormValues) => {
     if (!accessToken) return
     try {
@@ -79,10 +95,76 @@ export default function SetupPage() {
         name: data.dogName,
         birth_date: format(data.dogBirthday, "yyyy-MM-dd"),
       })
-      router.push("/timeline")
+      setInviteToken(group.invite_token)
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "エラーが発生しました")
     }
+  }
+
+  if (inviteToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/30">
+        <Toaster position="top-center" />
+        <div className="mx-auto max-w-md px-5 pt-12 pb-16">
+          <div className="text-center mb-10">
+            <div className="flex justify-center mb-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
+                <ShibaFace className="h-14 w-14 text-card" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              まんまる<span className="text-primary">しば</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">登録完了！</p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-foreground">家族を招待する</p>
+              <p className="text-xs text-muted-foreground">
+                このリンクを家族に送ると、グループに参加できます。
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={inviteUrl}
+                  className="bg-card border-border text-xs text-muted-foreground"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopy}
+                  className="shrink-0"
+                >
+                  {copied
+                    ? <Check className="h-4 w-4 text-green-500" />
+                    : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleLineShare}
+              className="w-full h-12 bg-[#06C755] hover:bg-[#06C755]/90 text-white font-bold rounded-xl"
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              LINEで送る
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push("/timeline")}
+              className="w-full h-12 text-muted-foreground hover:text-foreground"
+            >
+              あとで送る
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
