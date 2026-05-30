@@ -38,6 +38,7 @@ interface CareRecord {
 interface TimelineEntry {
   id: string
   care_type: string
+  recorded_at: string
   type: ActivityType
   title: string
   subtitle?: string
@@ -61,6 +62,13 @@ const CARE_TYPE_LABELS: Record<string, string> = {
   walk_long: "散歩（ロング）",
 }
 
+function toDatetimeLocalValue(isoOrLocal: string): string {
+  const d = new Date(isoOrLocal)
+  if (isNaN(d.getTime())) return isoOrLocal
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function toTimelineEntry(record: CareRecord): TimelineEntry {
   const config = CARE_TYPE_MAP[record.care_type] ?? { type: "pee" as ActivityType, title: record.care_type }
   const time = new Date(record.recorded_at).toLocaleTimeString("ja-JP", {
@@ -70,6 +78,7 @@ function toTimelineEntry(record: CareRecord): TimelineEntry {
   return {
     id: String(record.id),
     care_type: record.care_type,
+    recorded_at: record.recorded_at,
     type: config.type,
     title: config.title,
     subtitle: config.subtitle,
@@ -90,7 +99,7 @@ export default function ShibaCareTimeline() {
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [editTarget, setEditTarget] = useState<{ id: string; care_type: string } | null>(null)
+  const [editTarget, setEditTarget] = useState<{ id: string; care_type: string; recorded_at: string } | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
@@ -143,14 +152,17 @@ export default function ShibaCareTimeline() {
 
   const handleEdit = (id: string) => {
     const record = records.find((r) => r.id === id)
-    if (record) setEditTarget({ id, care_type: record.care_type })
+    if (record) setEditTarget({ id, care_type: record.care_type, recorded_at: record.recorded_at })
   }
 
-  const handleUpdate = async (care_type: string) => {
+  const handleUpdate = async () => {
     if (!editTarget || !authToken) return
     setIsUpdating(true)
     try {
-      const updated = await api.careRecords.update(authToken, Number(editTarget.id), { care_type })
+      const updated = await api.careRecords.update(authToken, Number(editTarget.id), {
+        care_type: editTarget.care_type,
+        recorded_at: new Date(editTarget.recorded_at).toISOString(),
+      })
       setRecords((prev) => prev.map((r) => (r.id === editTarget.id ? toTimelineEntry(updated) : r)))
       setEditTarget(null)
     } finally {
@@ -204,23 +216,41 @@ export default function ShibaCareTimeline() {
         <DialogHeader>
           <DialogTitle>記録を編集</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3 py-4">
-          {Object.entries(CARE_TYPE_LABELS).map(([key, label]) => (
-            <Button
-              key={key}
-              variant={editTarget?.care_type === key ? "default" : "outline"}
-              className="h-12 rounded-2xl"
-              onClick={() => setEditTarget((prev) => prev ? { ...prev, care_type: key } : prev)}
-            >
-              {label}
-            </Button>
-          ))}
+        <div className="space-y-5 py-2">
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">記録日時</p>
+            <input
+              type="datetime-local"
+              className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              value={editTarget ? toDatetimeLocalValue(editTarget.recorded_at) : ""}
+              onChange={(e) =>
+                setEditTarget((prev) =>
+                  prev ? { ...prev, recorded_at: e.target.value } : prev
+                )
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">ケアの種類</p>
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(CARE_TYPE_LABELS).map(([key, label]) => (
+                <Button
+                  key={key}
+                  variant={editTarget?.care_type === key ? "default" : "outline"}
+                  className="h-12 rounded-2xl"
+                  onClick={() => setEditTarget((prev) => prev ? { ...prev, care_type: key } : prev)}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setEditTarget(null)} disabled={isUpdating}>
             キャンセル
           </Button>
-          <Button onClick={() => handleUpdate(editTarget!.care_type)} disabled={isUpdating}>
+          <Button onClick={handleUpdate} disabled={isUpdating}>
             {isUpdating ? "保存中..." : "保存する"}
           </Button>
         </DialogFooter>
