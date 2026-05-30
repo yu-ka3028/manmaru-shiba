@@ -171,7 +171,7 @@ export default function ShibaCareTimeline() {
   }
 
   const handleSettings = () => {
-    router.push("/settings")
+    window.location.href = "/settings"
   }
 
   const handleAddEntry = () => {
