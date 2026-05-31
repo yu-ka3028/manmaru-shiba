@@ -70,8 +70,9 @@ export default function SetupPage() {
     )
   }
 
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID ?? ""
   const inviteUrl = inviteToken
-    ? `${window.location.origin}/join?token=${inviteToken}`
+    ? `https://liff.line.me/${liffId}/join?token=${inviteToken}`
     : ""
 
   const handleCopy = async () => {
