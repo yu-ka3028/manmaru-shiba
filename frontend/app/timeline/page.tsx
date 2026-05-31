@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLiff } from "@/hooks/use-liff"
 import { ShibaHeader, FamilyCircle } from "@/components/shiba-header"
-import { StatusSummary, createDefaultStatusItems } from "@/components/status-summary"
+import { StatusSummary } from "@/components/status-summary"
 import { TimelineItem, type ActivityType } from "@/components/timeline-card"
 import { Plus, PencilLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import { PawPrint } from "@/components/shiba-icons"
 import { api } from "@/lib/api"
+import { Droplets, Music, UtensilsCrossed } from "lucide-react"
 
 interface CareRecord {
   id: number
@@ -87,10 +88,63 @@ function toTimelineEntry(record: CareRecord): TimelineEntry {
   }
 }
 
+function buildStatusItems(records: TimelineEntry[]) {
+  const now = new Date()
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  const formatElapsed = (recorded_at: string) => {
+    const diff = Math.floor((now.getTime() - new Date(recorded_at).getTime()) / 60000)
+    if (diff < 60) return `${diff}分前`
+    return `${Math.floor(diff / 60)}時間前`
+  }
+
+  const latest = (type: string) => records.find((r) => r.care_type === type)
+
+  const pee = latest("pee")
+  const poop = latest("poop")
+  const meal = latest("meal")
+  const todayWalks = records.filter(
+    (r) => (r.care_type === "walk_short" || r.care_type === "walk_long") &&
+      new Date(r.recorded_at) >= todayStart
+  ).length
+
+  const poopElapsedMin = poop
+    ? Math.floor((now.getTime() - new Date(poop.recorded_at).getTime()) / 60000)
+    : Infinity
+
+  return [
+    {
+      icon: <Droplets className="h-4 w-4" />,
+      label: "おしっこ",
+      value: pee ? formatElapsed(pee.recorded_at) : "なし",
+      isWarning: false,
+    },
+    {
+      icon: <Music className="h-4 w-4" />,
+      label: "うんち",
+      value: poop ? formatElapsed(poop.recorded_at) : "なし",
+      isWarning: poopElapsedMin > 240,
+    },
+    {
+      icon: <PawPrint className="h-4 w-4" />,
+      label: "散歩",
+      value: todayWalks > 0 ? `今日${todayWalks}回` : "なし",
+      isWarning: false,
+    },
+    {
+      icon: <UtensilsCrossed className="h-4 w-4" />,
+      label: "ごはん",
+      value: meal
+        ? new Date(meal.recorded_at).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
+        : "なし",
+      isWarning: false,
+    },
+  ]
+}
+
 export default function ShibaCareTimeline() {
   const router = useRouter()
   const { isLoading: liffLoading, isInClient, accessToken, error: liffError } = useLiff()
-  const statusItems = createDefaultStatusItems()
 
   const [records, setRecords] = useState<TimelineEntry[]>([])
   const [isLoadingRecords, setIsLoadingRecords] = useState(false)
@@ -278,7 +332,7 @@ export default function ShibaCareTimeline() {
 
           {/* 右: サマリー 2x2 */}
           <div className="flex-1 min-w-0">
-            <StatusSummary items={statusItems} />
+            <StatusSummary items={buildStatusItems(records)} />
           </div>
         </section>
 
