@@ -52,9 +52,10 @@ export default function SettingsPage() {
         const firstDog = authData.dogs?.[0]
         if (!firstDog) throw new Error("犬の情報が見つかりません")
 
-        if (authData.invite_token) {
+        const inviteToken = authData.dogs?.[0]?.invite_token
+        if (inviteToken) {
           const liffId = process.env.NEXT_PUBLIC_LIFF_ID ?? ""
-          setInviteUrl(`https://liff.line.me/${liffId}/join?token=${authData.invite_token}`)
+          setInviteUrl(`https://liff.line.me/${liffId}/join?token=${inviteToken}`)
         }
 
         setJwtToken(token)

@@ -20,11 +20,9 @@ module Api
           "HS256"
         )
 
-        group = user.groups.first
         render json: {
           token: token,
-          dogs: user.dogs.map { |d| { id: d.id, name: d.name } },
-          invite_token: group&.invite_token
+          dogs: user.dogs.includes(:group).map { |d| { id: d.id, name: d.name, invite_token: d.group&.invite_token } }
         }
       end
 

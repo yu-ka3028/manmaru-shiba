@@ -36,7 +36,7 @@ async function request<T>(
 export const api = {
   auth: {
     line: (accessToken: string) =>
-      request<{ token: string; dogs: { id: number; name: string }[]; invite_token: string | null }>("/api/v1/auth/line", {
+      request<{ token: string; dogs: { id: number; name: string; invite_token: string | null }[] }>("/api/v1/auth/line", {
         method: "POST",
         body: JSON.stringify({ access_token: accessToken }),
       }),
