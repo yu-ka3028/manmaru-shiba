@@ -3,6 +3,22 @@ module Api
     class GroupsController < ApplicationController
       include Authenticatable
 
+      skip_before_action :authenticate_user!, only: [:preview]
+
+      def preview
+        group = Group.find_by(invite_token: params[:invite_token])
+        unless group
+          render json: { error: "Invalid invite token" }, status: :not_found and return
+        end
+
+        dog = group.dogs.first
+        render json: {
+          group_name: group.name,
+          dog_name: dog&.name,
+          dog_birth_date: dog&.birth_date&.iso8601
+        }
+      end
+
       def create
         group = Group.new(name: params[:name])
         if group.save
