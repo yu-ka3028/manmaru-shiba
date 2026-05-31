@@ -163,7 +163,11 @@ export default function ShibaCareTimeline() {
         care_type: editTarget.care_type,
         recorded_at: new Date(editTarget.recorded_at).toISOString(),
       })
-      setRecords((prev) => prev.map((r) => (r.id === editTarget.id ? toTimelineEntry(updated) : r)))
+      setRecords((prev) =>
+        prev
+          .map((r) => (r.id === editTarget.id ? toTimelineEntry(updated) : r))
+          .sort((a, b) => new Date(b.recorded_at).getTime() - new Date(a.recorded_at).getTime())
+      )
       setEditTarget(null)
     } finally {
       setIsUpdating(false)
@@ -285,7 +289,7 @@ export default function ShibaCareTimeline() {
               <PencilLine className="h-3.5 w-3.5 text-primary" />
             </div>
             <h2 className="text-sm font-bold text-primary tracking-wide">
-              今日の記録
+              最近の{dogName}
             </h2>
           </div>
 
