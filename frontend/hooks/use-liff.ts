@@ -39,7 +39,7 @@ export function useLiff(): UseLiffResult {
         setIsInClient(inClient)
         if (!inClient) return // 外部ブラウザはフォールバック表示のみ
         if (!liff.isLoggedIn()) {
-          liff.login()
+          liff.login({ redirectUri: window.location.href })
           return
         }
         setAccessToken(liff.getAccessToken())
