@@ -40,7 +40,11 @@ const age = months < 0 ? years - 1 : years
 
 ## 言語化チェックリスト
 
-- [ ] `skip_before_action` を使う理由と、使う際に気をつけることは？
-- [ ] `invite_token` を認証なしで公開してよい理由を説明できるか
-- [ ] `auth/line` のレスポンスに `invite_token` を追加したことで、既存の呼び出し側に影響はないか
-- [ ] `user.groups.first` でよい理由は？（複数グループに所属する設計ではないから）
+- [x] `skip_before_action` を使う理由と、使う際に気をつけることは？
+  - アクションの前に必ず実行される処理（before_action）を特定のアクションだけ外す仕組み。今回は`authenticate_user!`をpreviewだけスキップ。気をつけることは認証をスキップすることで未認証ユーザーがアクセスできるようになるセキュリティリスク。
+- [x] `invite_token` を認証なしで公開してよい理由を説明できるか
+  - `SecureRandom.urlsafe_base64(16)` による128ビットのランダム文字列で推測が現実的に不可能。知っている＝LINE経由で送ってもらった人という前提が成り立つ。将来的にはbot友達登録を必須にしてpreviewにも認証をかける改善余地はある。
+- [x] `auth/line` のレスポンスに `invite_token` を追加したことで、既存の呼び出し側に影響はないか
+  - `join-client.tsx`・`setup-client.tsx`・`timeline/page.tsx` はいずれも `invite_token` を参照していないため影響なし。レスポンスにフィールドが追加されても使っていない側は無視するだけなので既存の動作は壊れない。
+- [x] `user.groups.first` でよい理由は？（複数グループに所属する設計ではないから）
+  - `user.groups.first` は「たまたま最初のグループ」を取るだけで犬との対応が保証されていない。`d.group.invite_token` にすることで「この犬が属するグループのinvite_token」という意味が明確になる。1グループ1犬の設計でも意図を明確にするために変更した。
