@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLiff } from "@/hooks/use-liff"
 import { toast, Toaster } from "sonner"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Copy, Check, Share2 } from "lucide-react"
 import { ShibaFace } from "@/components/shiba-icons"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 const RAILS_API_URL = process.env.NEXT_PUBLIC_RAILS_API_URL ?? ""
 
@@ -26,6 +27,8 @@ export default function SettingsPage() {
   const [dogId, setDogId] = useState<number | null>(null)
   const [peeHours, setPeeHours] = useState("4")
   const [poopHours, setPoopHours] = useState("4")
+  const [inviteUrl, setInviteUrl] = useState("")
+  const [copied, setCopied] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -48,6 +51,12 @@ export default function SettingsPage() {
         const token: string = authData.token
         const firstDog = authData.dogs?.[0]
         if (!firstDog) throw new Error("犬の情報が見つかりません")
+
+        const inviteToken = authData.dogs?.[0]?.invite_token
+        if (inviteToken) {
+          const liffId = process.env.NEXT_PUBLIC_LIFF_ID ?? ""
+          setInviteUrl(`https://liff.line.me/${liffId}/join?token=${inviteToken}`)
+        }
 
         setJwtToken(token)
         setDogId(firstDog.id)
@@ -194,6 +203,46 @@ export default function SettingsPage() {
           >
             {isSaving ? "保存中..." : "保存する"}
           </Button>
+
+          {inviteUrl && (
+            <div className="space-y-2 pt-4 border-t border-border">
+              <p className="text-sm font-semibold text-foreground">家族を招待する</p>
+              <p className="text-xs text-muted-foreground">
+                このリンクを家族に送るとグループに参加できます。
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={inviteUrl}
+                  className="bg-card border-border text-xs text-muted-foreground"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(inviteUrl)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  }}
+                  className="shrink-0"
+                >
+                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button
+                type="button"
+                onClick={() => {
+                  const text = `まんまるしばに招待します！\n${inviteUrl}`
+                  window.open(`https://line.me/R/share?text=${encodeURIComponent(text)}`, "_blank")
+                }}
+                className="w-full h-12 bg-[#06C755] hover:bg-[#06C755]/90 text-white font-bold rounded-xl"
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                LINEで送る
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

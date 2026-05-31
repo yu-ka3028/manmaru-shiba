@@ -36,7 +36,7 @@ async function request<T>(
 export const api = {
   auth: {
     line: (accessToken: string) =>
-      request<{ token: string; dogs: { id: number; name: string }[] }>("/api/v1/auth/line", {
+      request<{ token: string; dogs: { id: number; name: string; invite_token: string | null }[] }>("/api/v1/auth/line", {
         method: "POST",
         body: JSON.stringify({ access_token: accessToken }),
       }),
@@ -54,6 +54,8 @@ export const api = {
         token,
         body: JSON.stringify({ invite_token: inviteToken }),
       }),
+    preview: (inviteToken: string) =>
+      request<{ group_name: string; dog_name: string | null; dog_birth_date: string | null }>(`/api/v1/groups/preview?invite_token=${inviteToken}`),
   },
   dogs: {
     create: (

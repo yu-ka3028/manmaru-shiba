@@ -22,7 +22,7 @@ module Api
 
         render json: {
           token: token,
-          dogs: user.dogs.map { |d| { id: d.id, name: d.name } }
+          dogs: user.dogs.includes(:group).map { |d| { id: d.id, name: d.name, invite_token: d.group&.invite_token } }
         }
       end
 

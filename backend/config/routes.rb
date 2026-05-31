@@ -8,6 +8,7 @@ Rails.application.routes.draw do
       resources :groups, only: [:create] do
         collection do
           post :join
+          get :preview
         end
       end
 
