@@ -2,11 +2,14 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import liff from "@line/liff"
 import { useLiff } from "@/hooks/use-liff"
 import { toast, Toaster } from "sonner"
 import { ShibaFace } from "@/components/shiba-icons"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
+
+const LINE_ADD_FRIEND_URL = "https://line.me/R/ti/p/@152uuqjs"
 
 interface GroupPreview {
   group_name: string
@@ -110,7 +113,7 @@ function JoinContent({ accessToken }: JoinContentProps) {
 }
 
 export default function JoinPage() {
-  const { isLoading, isInClient, accessToken, error } = useLiff()
+  const { isLoading, isInClient, accessToken, isFriend, error, recheckFriendship } = useLiff()
 
   if (isLoading) {
     return (
@@ -148,9 +151,58 @@ export default function JoinPage() {
           </h1>
         </div>
 
-        <Suspense fallback={<p className="text-center text-muted-foreground text-sm">読み込み中...</p>}>
-          <JoinContent accessToken={accessToken} />
-        </Suspense>
+        {isFriend === false ? (
+          <AddFriendStep onRecheckFriendship={recheckFriendship} />
+        ) : (
+          <Suspense fallback={<p className="text-center text-muted-foreground text-sm">読み込み中...</p>}>
+            <JoinContent accessToken={accessToken} />
+          </Suspense>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface AddFriendStepProps {
+  onRecheckFriendship: () => Promise<void>
+}
+
+function AddFriendStep({ onRecheckFriendship }: AddFriendStepProps) {
+  const [isChecking, setIsChecking] = useState(false)
+
+  const handleAddFriend = () => {
+    liff.openWindow({ url: LINE_ADD_FRIEND_URL, external: false })
+  }
+
+  const handleConfirm = async () => {
+    setIsChecking(true)
+    await onRecheckFriendship()
+    setIsChecking(false)
+  }
+
+  return (
+    <div className="text-center space-y-8">
+      <div className="space-y-2">
+        <h2 className="text-xl font-bold text-foreground">友達追加が必要です</h2>
+        <p className="text-sm text-muted-foreground">
+          まんまるしばを使うには、まずLINE公式アカウントを友達追加してください。
+        </p>
+      </div>
+      <div className="space-y-3">
+        <Button
+          onClick={handleAddFriend}
+          className="w-full h-12 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold rounded-xl shadow-md shadow-primary/20 hover:opacity-90 transition-opacity"
+        >
+          友達追加する
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={handleConfirm}
+          disabled={isChecking}
+          className="w-full h-12 text-muted-foreground hover:text-foreground"
+        >
+          {isChecking ? "確認中..." : "追加しました →"}
+        </Button>
       </div>
     </div>
   )

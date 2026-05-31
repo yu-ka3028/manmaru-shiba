@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import liff from "@line/liff"
 
 interface LiffProfile {
@@ -14,7 +14,9 @@ interface UseLiffResult {
   accessToken: string | null
   isLoading: boolean
   isInClient: boolean
+  isFriend: boolean | null
   error: string | null
+  recheckFriendship: () => Promise<void>
 }
 
 export function useLiff(): UseLiffResult {
@@ -22,6 +24,7 @@ export function useLiff(): UseLiffResult {
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isInClient, setIsInClient] = useState(false)
+  const [isFriend, setIsFriend] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -34,19 +37,22 @@ export function useLiff(): UseLiffResult {
 
     liff
       .init({ liffId })
-      .then(() => {
+      .then(async () => {
         const inClient = liff.isInClient()
         setIsInClient(inClient)
-        if (!inClient) return // 外部ブラウザはフォールバック表示のみ
+        if (!inClient) return
         if (!liff.isLoggedIn()) {
           liff.login({ redirectUri: window.location.href })
           return
         }
         setAccessToken(liff.getAccessToken())
-        return liff.getProfile()
-      })
-      .then((p) => {
-        if (p) setProfile(p)
+
+        const [p, friendship] = await Promise.all([
+          liff.getProfile(),
+          liff.getFriendship().catch(() => ({ friendFlag: true })),
+        ])
+        setProfile(p)
+        setIsFriend(friendship.friendFlag)
       })
       .catch((e: Error) => {
         setError(e.message)
@@ -56,5 +62,14 @@ export function useLiff(): UseLiffResult {
       })
   }, [])
 
-  return { profile, accessToken, isLoading, isInClient, error }
+  const recheckFriendship = useCallback(async () => {
+    try {
+      const { friendFlag } = await liff.getFriendship()
+      setIsFriend(friendFlag)
+    } catch {
+      setIsFriend(true)
+    }
+  }, [])
+
+  return { profile, accessToken, isLoading, isInClient, isFriend, error, recheckFriendship }
 }
