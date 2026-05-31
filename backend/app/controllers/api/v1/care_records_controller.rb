@@ -11,7 +11,7 @@ module Api
 
         records = dog.care_records
           .includes(:user)
-          .where(recorded_at: Time.current.beginning_of_day..)
+          .where(recorded_at: 24.hours.ago..)
           .order(recorded_at: :desc)
 
         render json: records.map { |r|
