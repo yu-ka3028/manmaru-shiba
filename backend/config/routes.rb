@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  get "/health", to: proc { [200, {}, ["ok"]] }
+
   post "/webhooks/line", to: "webhooks/line#receive"
 
   namespace :api do
