@@ -55,8 +55,8 @@ namespace :richmenu do
     puts "✓ Created: #{rich_menu_id}"
 
     puts "Uploading image..."
-    png = File.binread(Rails.root.join("lib/tasks/richmenu.png"))
-    line_post("https://api-data.line.me/v2/bot/richmenu/#{rich_menu_id}/content", token, body: png, content_type: "image/png")
+    jpg = File.binread(Rails.root.join("lib/tasks/richmenu.jpg"))
+    line_post("https://api-data.line.me/v2/bot/richmenu/#{rich_menu_id}/content", token, body: jpg, content_type: "image/jpeg")
     puts "✓ Image uploaded"
 
     puts "Setting as default..."
