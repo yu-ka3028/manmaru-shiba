@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  get "/health", to: proc { [200, {}, ["ok"]] }
+  get "/health", to: proc { [200, {"Content-Type" => "application/json"}, [{ status: "ok", memory_mb: (Process.rss / 1024.0).round(1) }.to_json]] }
 
   post "/webhooks/line", to: "webhooks/line#receive"
 
