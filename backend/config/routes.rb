@@ -1,5 +1,8 @@
 Rails.application.routes.draw do
-  get "/health", to: proc { [200, {"Content-Type" => "application/json"}, [{ status: "ok", memory_mb: (Process.rss / 1024.0).round(1) }.to_json]] }
+  get "/health", to: proc {
+    memory_kb = File.read("/proc/self/status").match(/VmRSS:\s+(\d+)/)[1].to_i
+    [200, {"Content-Type" => "application/json"}, [{ status: "ok", memory_mb: (memory_kb / 1024.0).round(1) }.to_json]]
+  }
 
   post "/webhooks/line", to: "webhooks/line#receive"
 
