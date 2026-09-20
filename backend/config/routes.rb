@@ -9,6 +9,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       post "/auth/line", to: "auth#line"
+      post "/auth/development", to: "auth#development"
 
       resources :groups, only: [:create] do
         collection do
@@ -21,6 +22,7 @@ Rails.application.routes.draw do
 
       resources :dogs, only: [:create, :show] do
         resources :care_records, only: [:index, :create]
+        resources :grooming_records, only: [:index, :create]
         resource :alert_settings, only: [:show, :update]
       end
     end

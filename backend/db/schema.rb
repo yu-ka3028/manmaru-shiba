@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_05_25_093715) do
+ActiveRecord::Schema[7.0].define(version: 2026_05_25_093716) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -46,6 +46,18 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_25_093715) do
     t.index ["group_id"], name: "index_dogs_on_group_id"
   end
 
+  create_table "grooming_records", force: :cascade do |t|
+    t.bigint "dog_id", null: false
+    t.bigint "user_id", null: false
+    t.string "grooming_type", null: false
+    t.datetime "performed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dog_id", "performed_at", "id"], name: "index_grooming_records_on_dog_and_performed_at_and_id", order: { performed_at: :desc, id: :desc }
+    t.index ["dog_id"], name: "index_grooming_records_on_dog_id"
+    t.index ["user_id"], name: "index_grooming_records_on_user_id"
+  end
+
   create_table "group_members", force: :cascade do |t|
     t.bigint "group_id", null: false
     t.bigint "user_id", null: false
@@ -79,6 +91,8 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_25_093715) do
   add_foreign_key "care_records", "dogs"
   add_foreign_key "care_records", "users"
   add_foreign_key "dogs", "groups"
+  add_foreign_key "grooming_records", "dogs"
+  add_foreign_key "grooming_records", "users"
   add_foreign_key "group_members", "groups"
   add_foreign_key "group_members", "users"
 end

@@ -40,6 +40,12 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ access_token: accessToken }),
       }),
+    development: () =>
+      request<{ token: string; dogs: { id: number; name: string; invite_token: string | null }[] }>("/api/v1/auth/development", {
+        method: "POST",
+      }),
+    current: (accessToken: string) =>
+      process.env.NODE_ENV === "development" ? api.auth.development() : api.auth.line(accessToken),
   },
   groups: {
     create: (token: string, name: string) =>
@@ -67,6 +73,18 @@ export const api = {
         token,
         body: JSON.stringify(params),
       }),
+  },
+  groomingRecords: {
+    index: (token: string, dogId: number, cursor?: string) =>
+      request<{ records: { id: number; grooming_type: string; performed_at: string; user_name: string }[]; next_cursor: string | null }>(
+        `/api/v1/dogs/${dogId}/grooming_records${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+        { token }
+      ),
+    create: (token: string, dogId: number, params: { grooming_type: string; performed_at: string }) =>
+      request<{ id: number; grooming_type: string; performed_at: string; user_name: string }>(
+        `/api/v1/dogs/${dogId}/grooming_records`,
+        { method: "POST", token, body: JSON.stringify({ grooming_record: params }) }
+      ),
   },
   careRecords: {
     index: (token: string, dogId: number) =>

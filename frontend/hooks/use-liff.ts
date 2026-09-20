@@ -28,6 +28,15 @@ export function useLiff(): UseLiffResult {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      setProfile({ userId: "development-local-user", displayName: "ローカル確認ユーザー" })
+      setAccessToken("development-local-access-token")
+      setIsLoading(false)
+      setIsInClient(true)
+      setIsFriend(true)
+      return
+    }
+
     const liffId = process.env.NEXT_PUBLIC_LIFF_ID
     if (!liffId) {
       setError("LIFF ID が設定されていません")
@@ -63,6 +72,11 @@ export function useLiff(): UseLiffResult {
   }, [])
 
   const recheckFriendship = useCallback(async () => {
+    if (process.env.NODE_ENV === "development") {
+      setIsFriend(true)
+      return
+    }
+
     try {
       const { friendFlag } = await liff.getFriendship()
       setIsFriend(friendFlag)

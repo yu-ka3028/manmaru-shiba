@@ -62,7 +62,7 @@ function JoinContent({ accessToken }: JoinContentProps) {
   const handleJoin = async () => {
     setIsJoining(true)
     try {
-      const { token } = await api.auth.line(accessToken)
+      const { token } = await api.auth.current(accessToken)
       await api.groups.join(token, inviteToken)
       router.push("/timeline")
     } catch (e: unknown) {
