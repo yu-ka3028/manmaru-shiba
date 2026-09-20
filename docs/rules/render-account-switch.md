@@ -43,7 +43,7 @@ DBはSupabase・フロントはVercelのため、Render側のみ変更すれば�
 | Branch | main |
 | Root Directory | backend |
 | Build Command | `bundle install` |
-| Start Command | `bundle exec puma -C config/puma.rb` |
+| Start Command | `bundle exec rails db:migrate && bundle exec rails server -b 0.0.0.0` |
 | Instance Type | **Free** |
 
 ---

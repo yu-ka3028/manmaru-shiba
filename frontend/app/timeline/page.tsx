@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useLiff } from "@/hooks/use-liff"
 import { ShibaHeader, FamilyCircle } from "@/components/shiba-header"
 import { StatusSummary } from "@/components/status-summary"
@@ -163,7 +164,7 @@ export default function ShibaCareTimeline() {
       setIsLoadingRecords(true)
       setFetchError(null)
       try {
-        const { token, dogs } = await api.auth.line(accessToken)
+        const { token, dogs } = await api.auth.current(accessToken)
         setAuthToken(token)
         if (dogs.length === 0) {
           router.replace("/setup")
@@ -335,6 +336,10 @@ export default function ShibaCareTimeline() {
             <StatusSummary items={buildStatusItems(records)} />
           </div>
         </section>
+
+        <Button asChild className="mt-4 w-full rounded-2xl">
+          <Link href="/grooming">お手入れ記録</Link>
+        </Button>
 
         {/* Timeline */}
         <section aria-label="タイムライン" className="mt-8">

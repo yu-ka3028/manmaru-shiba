@@ -89,7 +89,7 @@ export default function SetupPage() {
   const onSubmit = async (data: SetupFormValues) => {
     if (!accessToken) return
     try {
-      const { token } = await api.auth.line(accessToken)
+      const { token } = await api.auth.current(accessToken)
       const group = await api.groups.create(token, data.groupName)
       await api.dogs.create(token, {
         group_id: group.id,

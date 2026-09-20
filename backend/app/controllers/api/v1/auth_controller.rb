@@ -14,6 +14,23 @@ module Api
           render json: { error: "User not found. Please open the LINE bot first." }, status: :not_found and return
         end
 
+        render_auth_response(user)
+      end
+
+      def development
+        return head :not_found unless Rails.env.development?
+        return head :forbidden unless request.local?
+
+        user = User.find_or_create_by!(line_user_id: "development-local-user") do |new_user|
+          new_user.display_name = "ローカル確認ユーザー"
+        end
+
+        render_auth_response(user)
+      end
+
+      private
+
+      def render_auth_response(user)
         token = JWT.encode(
           { user_id: user.id, exp: 24.hours.from_now.to_i },
           ENV.fetch("JWT_SECRET"),
@@ -25,8 +42,6 @@ module Api
           dogs: user.dogs.includes(:group).map { |d| { id: d.id, name: d.name, invite_token: d.group&.invite_token } }
         }
       end
-
-      private
 
       def fetch_line_profile(access_token)
         uri = URI("https://api.line.me/v2/profile")
